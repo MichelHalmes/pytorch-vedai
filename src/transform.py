@@ -14,9 +14,9 @@ def get_transform_fn(for_training):
 
 
     img_transforms.extend([
-        transforms.Resize(IMG_SIZE),
+        # transforms.Resize(IMG_SIZE),
         transforms.ToTensor(),
-        transforms.Normalize(RGB_AVG, RGB_STDDEV) # TODO
+        # transforms.Normalize(RGB_AVG, RGB_STDDEV) # TODO
     ])
 
     img_transform = transforms.Compose(img_transforms)
@@ -28,11 +28,11 @@ def get_transform_fn(for_training):
     return transform
 
 
-def inverse_img_transform(img_tensor):
-    image = img_tensor.numpy()
-    image = image.transpose(1, 2, 0)
-    image = image * np.array(RGB_STDDEV) + np.array(RGB_AVG)
-    return image
+# def inverse_img_transform(img_tensor):
+#     image = img_tensor.numpy()
+#     image = image.transpose(1, 2, 0)
+#     image = image * np.array(RGB_STDDEV) + np.array(RGB_AVG)
+#     return image
 
 
 
