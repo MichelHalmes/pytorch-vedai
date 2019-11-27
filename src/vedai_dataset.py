@@ -41,7 +41,7 @@ class VedaiDataset(Dataset):
     def _load_image_ids(self, for_training):
         images_dir = path.dirname(path.join(DATA_PATH, IMAGES_PATH))
         image_ids = [filename.split(".", 2)[0] for filename in listdir(images_dir) if filename.endswith(".jpg")]
-        
+
         random.seed(0)
         random.shuffle(image_ids)
         split_idx = int(EVALSET_PCT*len(image_ids))
@@ -60,7 +60,12 @@ class VedaiDataset(Dataset):
         image_id = self._image_ids[i]
         image_path = path.join(DATA_PATH, IMAGES_PATH.format(id_=image_id))
         image = Image.open(image_path)
-        # image = image.convert("RGB") ???????
+        # image = image.convert("RGB")
+
+        # import requests
+        # url = 'https://images.fineartamerica.com/images-medium-large-5/dog-and-cat-driving-car-through-snowy-john-danielsjohan-de-meester.jpg'
+        # response = requests.get(url, stream = True)
+        # image = Image.open(response.raw)
 
         annotation_path = path.join(DATA_PATH, ANNOTATIONS_PATH.format(id_=image_id))
         with open(annotation_path) as fp:
@@ -81,9 +86,9 @@ class VedaiDataset(Dataset):
         boxes = torch.FloatTensor(boxes)  # (n_objects, 4)
         labels = torch.LongTensor(labels)  # (n_objects)
 
-        targets = dict(boxes=boxes, labels=labels)
+        target = dict(boxes=boxes, labels=labels)
 
-        return self._transform(image, targets)
+        return self._transform(image, target)
 
 
     def __len__(self):

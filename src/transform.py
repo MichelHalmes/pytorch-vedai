@@ -21,9 +21,9 @@ def get_transform_fn(for_training):
 
     img_transform = transforms.Compose(img_transforms)
 
-    def transform(image, targets):
+    def transform(image, target):
         # TODO: check it doesnt modify the original
-        return img_transform(image), targets
+        return img_transform(image), target
     
     return transform
 
