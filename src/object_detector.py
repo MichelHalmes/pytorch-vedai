@@ -1,7 +1,9 @@
+import logging 
 
 import requests
 from PIL import Image
 
+import torch
 import torch.nn as nn
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision import  transforms
@@ -29,6 +31,8 @@ class FastRcnnBoxPredictor(nn.Module):
 class ObjectDetector():
     def __init__(self, num_classes):
         self._model = self._init_pretrained_model(num_classes)
+        nb_params =sum(p.numel() for p in self._model.parameters() if p.requires_grad)
+        logging.info("Detector has %s trainable parameters", nb_params)
 
     def _init_pretrained_model(self, num_classes):
         model = fasterrcnn_resnet50_fpn(pretrained=True)
@@ -51,6 +55,19 @@ class ObjectDetector():
         # output = model([img_tensor])
         # print(output)
 
+
+    def train(self, training_loader, validation_loader):
+        optimizer = torch.optim.Adam(self._model.parameters(), lr = 0.0001)
+
+        for images, targets in training_loader:
+            losses = self._model(images, targets)
+            loss = sum(losses.values())  # TODO: add weighting
+            print(loss.item())
+            
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+    
 
 
 

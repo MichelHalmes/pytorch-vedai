@@ -7,9 +7,7 @@ from torch.utils.data import Dataset
 import torch
 from PIL import Image
 
-
 from transform import get_transform_fn
-
 
 
 DATA_PATH = "./data/vedai"
@@ -31,7 +29,6 @@ LABELS_DICT = {
     10: "small",
     11: "large",
 }
-
 
 
 class VedaiDataset(Dataset):
@@ -71,22 +68,22 @@ class VedaiDataset(Dataset):
 
             boxes = []
             labels = []
-            img_width, img_height, _ = image.shape
+            img_width, img_height = image.size
             for r in reader:
                 cx, cy, w, h = float(r["cx"]), float(r["cy"]), float(r["width"]), float(r["height"])
                 x_min = cx*img_width - w*img_width/2
                 y_min = cy*img_height - h*img_height/2
                 x_max = cx*img_width + w*img_width/2
                 y_max = cy*img_height + h*img_height/2
-                boxes.append(x_min, y_min, x_max, y_max)
-
-                labels.append(int(r["lable"]))
-
+                boxes.append((x_min, y_min, x_max, y_max))
+                labels.append(int(r["label"]))
 
         boxes = torch.FloatTensor(boxes)  # (n_objects, 4)
         labels = torch.LongTensor(labels)  # (n_objects)
 
-        return self._transform(image, boxes, labels)
+        targets = dict(boxes=boxes, labels=labels)
+
+        return self._transform(image, targets)
 
 
     def __len__(self):
@@ -95,6 +92,19 @@ class VedaiDataset(Dataset):
     @staticmethod
     def get_labels_dict():
         return LABELS_DICT
+
+    def collate_fn(self, batch):
+        images = []
+        targets = []
+        for image, target in batch:
+            images.append(image)
+            targets.append(target)
+
+        images = torch.stack(images, dim=0)
+
+        return images, targets
+        
+
 
 
 
