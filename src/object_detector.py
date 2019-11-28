@@ -1,15 +1,33 @@
 import logging 
 import time
 from itertools import cycle
+from os import path
+from contextlib import contextmanager
+
+
 import requests
 from PIL import Image
 
 import torch
 import torch.nn as nn
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
-from torchvision import  transforms
+from torchvision import transforms
 
-from torch.hub import load_state_dict_from_url
+from vedai_dataset import VedaiDataset
+from metrics.mean_average_precision import get_mean_average_precision
+
+
+
+@contextmanager
+def evaluating(net):
+    '''Temporarily switch to evaluation mode.'''
+    istrain = net.training
+    try:
+        net.eval()
+        yield net
+    finally:
+        if istrain:
+            net.train()
 
 
 class FastRcnnBoxPredictor(nn.Module):
@@ -30,15 +48,25 @@ class FastRcnnBoxPredictor(nn.Module):
 
 
 EVAL_STEPS = 10
+CHECKPOINT_DIR = "./data/model"
+CHECKPOINT_NAME = "model.pth.tar"
 
 class ObjectDetector():
-    def __init__(self, num_classes):
+
+    def __init__(self, num_classes, restore):
         self._model = self._init_pretrained_model(num_classes)
+        self._optimizer = torch.optim.Adam(self._model.parameters(), lr=0.0001)
+        if restore:
+            file_path = path.join(CHECKPOINT_DIR, CHECKPOINT_NAME)
+            state = torch.load(file_path)
+            self._model.load_state_dict(state["model"])
+            self._optimizer.load_state_dict(state["optimizer"])
+
         nb_params = sum(p.numel() for p in self._model.parameters() if p.requires_grad)
         logging.info("Detector has %s trainable parameters", nb_params)
 
     def _init_pretrained_model(self, num_classes):
-        model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=200)  # TODO:
+        model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=100)  # TODO:
         for _, parameter in model.named_parameters():
             parameter.requires_grad_(False)
 
@@ -66,54 +94,93 @@ class ObjectDetector():
     def train(self, training_loader, validation_loader):
         training_iter = cycle(iter(training_loader))
         validation_iter = cycle(iter(validation_loader))
-        optimizer = torch.optim.Adam(self._model.parameters(), lr=0.0001)
 
         step = 0
         while True:
             step += 1
-            self._run_train_step(training_iter, optimizer, step)
+            train_loss = self._run_train_step(training_iter, step)
 
             if step % EVAL_STEPS == 1 or True: # TODO
-                self._run_train_eval_step(validation_iter, step)
+                val_loss, mAP = self._run_train_eval_step(validation_iter, step)
+                self._checkpoint_model()
+                logging.info("\tStep: %s \ttrain-loss: %.2f \teval-loss: %.2f \tmAP: %.2f",
+                        step, train_loss, val_loss, mAP)
 
-    def _run_train_step(self, training_iter, optimizer, step):
+    def _run_train_step(self, training_iter, step):
         images, targets = next(training_iter)
         time_start = time.time()
         losses = self._model(images, targets)
         loss = sum(losses.values())  # TODO: add weighting
         time_loss = time.time() 
         
-        optimizer.zero_grad()
+        self._optimizer.zero_grad()
         loss.backward()
-        optimizer.step()
+        self._optimizer.step()
 
+        loss = loss.item()
         logging.info("\tStep: %s \tLoss: %.2f \ttime-loss: %.2f \ttime-optimize: %.2f",
-                        step, loss.item(), time_loss-time_start, time.time()-time_loss)
+                        step, loss, time_loss-time_start, time.time()-time_loss)
+        return loss
 
     def _run_train_eval_step(self, validation_iter, step):
         images, targets = next(validation_iter)
 
-        self._model.eval()
-        losses, predictions = self._compute_losses_and_predictions(images, targets)
+        losses = self._model(images, targets)
         loss = sum(losses.values())  # TODO: add weighting
-        self._model.train()
-        print(predictions)
+        with evaluating(self._model):
+            detections = self._model(images, targets)
+
+        labels_dict = VedaiDataset.get_labels_dict()
+        ground_truths = self._format_object_locations(targets, labels_dict)
+        detections = self._format_object_locations(detections, labels_dict)
+        mAP = get_mean_average_precision(ground_truths, detections)
+        return loss, mAP
 
 
-    def _compute_losses_and_predictions(self, images, targets):
-        """ The torchvision class FasterRCNN only returns the loss in training mode.
-            We also want the
+    @staticmethod
+    def _format_object_locations(locations_dict, labels_dict):
+        """ Formats preidctions and ground truths for metric evaluations:
+            locations_dict: [{boxes: tensor(x_min, y_min, x_max, y_max), lables: tensor(label_ids), <scores: tensor(score)>}]
+            returns: [(image_id, label_name, score, ((x_min, y_min, x_max, y_max)))]
         """
-        with torch.no_grad():
-            original_image_sizes = [tuple(img.shape[-2:]) for img in images] 
-            images, targets = self._model.transform(images, targets)
-            features = self._model.backbone(images.tensors)
-            proposals, proposal_losses = self._model.rpn(images, features, targets)
-            detections, detector_losses = self._model.roi_heads(features, proposals, images.image_sizes, targets)
-            detections = self._model.transform.postprocess(detections, images.image_sizes, original_image_sizes)
+        locations = []
+        for b, locations_dict in enumerate(locations_dict):
+            if not "scores" in locations_dict:
+                locations_dict["scores"] = torch.ones(locations_dict["labels"].size(), dtype=torch.float64)
+            for box, label, score in zip(locations_dict["boxes"], locations_dict["labels"], locations_dict["scores"]):
+                locations.append((
+                    f"batch_idx_{b}",
+                    labels_dict[label.item()],
+                    score.item(),
+                    tuple(box.tolist())))
 
-            losses = {**detector_losses, **proposal_losses} 
-            return losses, detections
+        return locations
+
+    def _checkpoint_model(self):
+        import copy
+        state = {
+            "model": self._model.state_dict(),
+            "optimizer": self._optimizer.state_dict()
+        }
+        file_path = path.join(CHECKPOINT_DIR, CHECKPOINT_NAME)
+        torch.save(state, file_path)
+
+
+
+    # def _compute_losses_and_predictions(self, images, targets):
+    #     """ The torchvision class FasterRCNN only returns the loss in training mode.
+    #         We also want the
+    #     """
+    #     with torch.no_grad():
+    #         original_image_sizes = [tuple(img.shape[-2:]) for img in images] 
+    #         images, targets = self._model.transform(images, targets)
+    #         features = self._model.backbone(images.tensors)
+    #         proposals, proposal_losses = self._model.rpn(images, features, targets)
+    #         detections, detector_losses = self._model.roi_heads(features, proposals, images.image_sizes, targets)
+    #         detections = self._model.transform.postprocess(detections, images.image_sizes, original_image_sizes)
+
+    #         losses = {**detector_losses, **proposal_losses} 
+    #         return losses, detections
 
         
 

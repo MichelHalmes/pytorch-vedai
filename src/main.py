@@ -29,7 +29,7 @@ def main():
     # img_tensor, boxes, lables = training_dataset[10]
     # utils.plot_sample(img_tensor, boxes, lables)
     labels_dict = VedaiDataset.get_labels_dict()
-    detector = ObjectDetector(num_classes=len(labels_dict))
+    detector = ObjectDetector(num_classes=len(labels_dict), restore=False)
 
     detector.train(training_loader, validation_loader)
 
