@@ -13,7 +13,7 @@ from transform import get_transform_fn
 DATA_PATH = "./data/vedai"
 IMAGES_PATH = "images/{id_}.jpg"
 ANNOTATIONS_PATH = "annotations/{id_}.txt"
-EVALSET_PCT = .2
+EVALSET_PCT = .1
 
 LABELS_DICT = {
     0: "car",
@@ -78,8 +78,9 @@ class VedaiDataset(Dataset):
                 try:
                     cx, cy, w, h = float(r["cx"]), float(r["cy"]), float(r["width"]), float(r["height"])
                 except:
-                    print(r, annotation_path)
-                    raise
+                    print("Remotve", r, annotation_path)
+                    return [(1, 2)]
+                    
                 x_min = cx*img_width - w*img_width/2
                 y_min = cy*img_height - h*img_height/2
                 x_max = cx*img_width + w*img_width/2
@@ -91,7 +92,6 @@ class VedaiDataset(Dataset):
         labels = torch.LongTensor(labels)  # (n_objects)
 
         target = dict(boxes=boxes, labels=labels)
-
         return self._transform(image, target)
 
 

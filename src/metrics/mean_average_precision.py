@@ -126,7 +126,9 @@ def GetPascalVOCMetrics(ground_truths,
 def get_mean_average_precision(ground_truths, detections):
     acc_AP = 0
     validClasses = 0
-    results = GetPascalVOCMetrics(ground_truths, detections)
+    ground_truths_merged = [gt for batch_gt in ground_truths for gt in batch_gt ]
+    detections_merged = [det for batch_det in detections for det in batch_det ]
+    results = GetPascalVOCMetrics(ground_truths_merged, detections_merged)
 
     for metricsPerClass in results:
         cl = metricsPerClass['class']
