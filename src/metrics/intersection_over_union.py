@@ -1,40 +1,53 @@
 def get_iou(boxA, boxB):
     # if boxes dont intersect
-    if _boxesIntersect(boxA, boxB) is False:
+    if not _boxes_intersect(boxA, boxB):
         return 0
-    interArea = _getIntersectionArea(boxA, boxB)
-    union = _getUnionAreas(boxA, boxB, interArea=interArea)
+    inter_area = _get_intersection_area(boxA, boxB)
+    union_area = _get_union_areas(boxA, boxB, inter_area=inter_area)
     # intersection over union
-    iou = interArea / union
+    iou = inter_area / union_area
     assert iou >= 0
     return iou
 
 
-def _boxesIntersect(boxA, boxB):
-    if boxA[0] > boxB[2]:
+def _boxes_intersect(boxA, boxB):
+    if boxA.x_min > boxB.x_max:
         return False  # boxA is right of boxB
-    if boxB[0] > boxA[2]:
+    if boxB.x_min > boxA.x_max:
         return False  # boxA is left of boxB
-    if boxA[3] < boxB[1]:
+    if boxA.y_max < boxB.y_min:
         return False  # boxA is above boxB
-    if boxA[1] > boxB[3]:
+    if boxA.y_min > boxB.y_max:
         return False  # boxA is below boxB
     return True
 
-def _getIntersectionArea(boxA, boxB):
-    xA = max(boxA[0], boxB[0])
-    yA = max(boxA[1], boxB[1])
-    xB = min(boxA[2], boxB[2])
-    yB = min(boxA[3], boxB[3])
+def _get_intersection_area(boxA, boxB):
+    xA = max(boxA.x_min, boxB.x_min)
+    yA = max(boxA.y_min, boxB.y_min)
+    xB = min(boxA.x_max, boxB.x_max)
+    yB = min(boxA.y_max, boxB.y_max)
     # intersection area
     return (xB - xA + 1) * (yB - yA + 1)
 
-def _getUnionAreas(boxA, boxB, interArea=None):
-    area_A = _getArea(boxA)
-    area_B = _getArea(boxB)
-    if interArea is None:
-        interArea = _getIntersectionArea(boxA, boxB)
-    return float(area_A + area_B - interArea)
+def _get_union_areas(boxA, boxB, inter_area=None):
+    area_A = _get_area(boxA)
+    area_B = _get_area(boxB)
+    if inter_area is None:
+        inter_area = _get_intersection_area(boxA, boxB)
+    return float(area_A + area_B - inter_area)
 
-def _getArea(box):
-    return (box[2] - box[0] + 1) * (box[3] - box[1] + 1)
+def _get_area(box):
+    return (box.x_max - box.x_min + 1) * (box.y_max - box.y_min + 1)
+
+
+def non_maximum_suppression(detections, threshold=.3):
+    detections = sorted(detections, key=lambda det: det.score, reverse=True)
+    new_detections=[detections[0]]
+    
+    for detection in detections:
+        for new_detection in new_detections:
+            if get_iou(detection.box, new_detection.box) > threshold:
+                break
+        else:
+            new_detections.append(detection)
+    return new_detections

@@ -3,7 +3,9 @@ from os import path
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-MIN_SCORE = 0.1
+from metrics.intersection_over_union import non_maximum_suppression
+
+MIN_SCORE = 0.00001
 LOG_DIR = "./data/logs/"
 
 def _plot_bounding_boxes(locations, ax, is_ground_truth):
@@ -29,7 +31,8 @@ def plot_detections(image, ground_truths, detections):
     plt.imshow(image)
 
     _plot_bounding_boxes(ground_truths, ax, is_ground_truth=True)
-    _plot_bounding_boxes(detections, ax, is_ground_truth=False)
+    detections_ = non_maximum_suppression(detections)
+    _plot_bounding_boxes(detections_, ax, is_ground_truth=False)
 
     fig_path = path.join(LOG_DIR, "detections.png")
     fig.savefig(fig_path)

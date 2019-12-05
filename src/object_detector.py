@@ -27,7 +27,7 @@ class ObjectDetector():
 
     def __init__(self, num_classes, restore):
         self._model = self._init_pretrained_model(num_classes)
-        self._optimizer = torch.optim.Adam(self._model.parameters(), lr=0.0001)
+        self._optimizer = torch.optim.Adam(self._model.parameters(), lr=.0001)
         if restore:
             file_path = path.join(config.CHECKPOINT_DIR, config.CHECKPOINT_NAME)
             state = torch.load(file_path)
@@ -84,6 +84,7 @@ class ObjectDetector():
 
             if step % config.EVAL_STEPS == 0:
                 metrics.update(self._run_train_eval_step(validation_iter, labels_dict, step))
+                # raise 
                 self._log_metrics(summary_writer, metrics, step)
                 self._checkpoint_model()
 
@@ -156,7 +157,7 @@ class ObjectDetector():
     def _log_metrics(writer, metrics, step):
         logging.info("\tStep: %s \ttrain-loss: %.2f \teval-loss: %.2f \tmAP: %.4f",
                         step, metrics["Loss/train"], metrics["Loss/val"], metrics["mAP/val"])
-        assert None
+
         for tag, value in metrics.items():
             if tag.startswith("Image"):
                 writer.add_figure(tag, value, step)
