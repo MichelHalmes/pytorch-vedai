@@ -8,25 +8,24 @@
 import logging
 import sys
 
-
+import click
 import numpy as np
 
 from vedai_dataset import VedaiDataset
-import utils
 from object_detector import ObjectDetector
 
 
-
-def main():
+@click.command()
+@click.option('--restore/--no-restore', default=True, help='Reinititalize the model or restore previous checkpoint')
+def train_model(restore):
     training_dataset = VedaiDataset(for_training=True)
     validation_dataset = VedaiDataset(for_training=False)
 
-    labels_dict = VedaiDataset.get_labels_dict()
-    detector = ObjectDetector(num_classes=len(labels_dict), restore=False)
+    num_classes = len(training_dataset.get_labels_dict())
+    detector = ObjectDetector(num_classes, restore)
 
     detector.train(training_dataset, validation_dataset)
  
-
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -34,7 +33,7 @@ if __name__ == "__main__":
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s")
 
-    main()
+    train_model()
 
 
 

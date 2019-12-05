@@ -75,11 +75,7 @@ class VedaiDataset(Dataset):
             labels = []
             img_width, img_height = image.size
             for r in reader:
-                try:
-                    cx, cy, w, h = float(r["cx"]), float(r["cy"]), float(r["width"]), float(r["height"])
-                except:
-                    print("Remotve", r, annotation_path)
-                    return [(1, 2)]
+                cx, cy, w, h = float(r["cx"]), float(r["cy"]), float(r["width"]), float(r["height"])
                     
                 x_min = cx*img_width - w*img_width/2
                 y_min = cy*img_height - h*img_height/2
