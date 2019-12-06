@@ -17,8 +17,9 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 from vedai_dataset import VedaiDataset
-from metrics.mean_average_precision import get_mean_average_precision
-from metrics.plot_detections import plot_detections
+from evaluate.mean_average_precision import get_mean_average_precision
+from evaluate.intersection_over_union import non_maximum_suppression
+from evaluate.plot_detections import plot_detections
 from utils import Box, Location, evaluating
 import config
 
@@ -37,7 +38,7 @@ class ObjectDetector():
         logging.info("Detector has %s trainable parameters", nb_params)
 
     def _init_pretrained_model(self, num_classes):
-        model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE)
+        model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE, box_nms_thresh=.3)
         for _, parameter in model.named_parameters():
             parameter.requires_grad_(False)
 
@@ -49,16 +50,6 @@ class ObjectDetector():
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model.to(device)
-
-        # url = 'https://images.fineartamerica.com/images-medium-large-5/dog-and-cat-driving-car-through-snowy-john-danielsjohan-de-meester.jpg'
-        # response = requests.get(url, stream = True)
-        # image = Image.open(response.raw)
-        # transf = transforms.ToTensor()
-        # img_tensor = transf(image)
-        # model.eval()
-        # output = model([img_tensor])
-        # model.train()
-        # print(output)
 
         return model
 

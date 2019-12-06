@@ -3,7 +3,7 @@ from collections import Counter
 
 import numpy as np
 
-from metrics.intersection_over_union import get_iou
+from evaluate.intersection_over_union import get_iou
 
 
 def calculate_average_precision(recall, precision):

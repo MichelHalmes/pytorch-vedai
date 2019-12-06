@@ -2,7 +2,9 @@ from collections import namedtuple
 from contextlib import contextmanager
 
 Box = namedtuple("Box", ["x_min", "y_min", "x_max", "y_max"])
+# Targets = namedtuple("Target", ["labels", "boxes"])
 Location = namedtuple("Location", ["image_id", "label", "score", "box"])
+
 
 
 @contextmanager

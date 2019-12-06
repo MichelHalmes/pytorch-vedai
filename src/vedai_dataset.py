@@ -7,7 +7,8 @@ from torch.utils.data import Dataset
 import torch
 from PIL import Image
 
-from transform import get_transform_fn
+from transform.transform import get_transform_fn
+from utils import Box
 
 
 DATA_PATH = "./data/vedai"
@@ -81,11 +82,8 @@ class VedaiDataset(Dataset):
                 y_min = cy*img_height - h*img_height/2
                 x_max = cx*img_width + w*img_width/2
                 y_max = cy*img_height + h*img_height/2
-                boxes.append((x_min, y_min, x_max, y_max))
+                boxes.append(Box(x_min, y_min, x_max, y_max))
                 labels.append(int(r["label"]))
-
-        boxes = torch.FloatTensor(boxes)  # (n_objects, 4)
-        labels = torch.LongTensor(labels)  # (n_objects)
 
         target = dict(boxes=boxes, labels=labels)
         return self._transform(image, target)

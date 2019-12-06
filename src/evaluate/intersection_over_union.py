@@ -41,6 +41,8 @@ def _get_area(box):
 
 
 def non_maximum_suppression(detections, threshold=.3):
+    if not detections:
+        return []
     detections = sorted(detections, key=lambda det: det.score, reverse=True)
     new_detections=[detections[0]]
     
