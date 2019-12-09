@@ -58,6 +58,64 @@ class RandomScale(object):
         return img, targets
 
 
+class RandomRotate(object):
+   
+    def __init__(self, angle=180):
+        self._angle = angle
+
+    def __call__(self, img, targets):
+        # PART 1: GET ROTATION MATRIX
+        angle = random.uniform(-self._angle, self._angle)
+        H, W = img.shape[:2]
+        cX, cY = W//2, H//2
+ 
+        # grab the rotation matrix (applying the negative of the
+        # angle to rotate clockwise), then grab the sine and cosine
+        # (i.e., the rotation components of the matrix)
+        M = cv2.getRotationMatrix2D((cX, cY), -angle, 1.)
+        cos = np.abs(M[0, 0])
+        sin = np.abs(M[0, 1])
+    
+        # compute the new bounding dimensions of the image
+        nW = int((H*sin) + (W*cos))
+        nH = int((H*cos) + (W*sin))
+    
+        # adjust the rotation matrix to take into account translation
+        M[0, 2] += (nW/2) - cX
+        M[1, 2] += (nH/2) - cY
+    
+        # PART 2: ROTATE IMAGE
+        # perform the actual rotation and return the image
+        img = cv2.warpAffine(img, M, (nW, nH))
+
+        # PART 3: ROTATE BOXES
+        boxes = targets["boxes"]
+         
+        # Compute all 4 corners of the box
+        width, height = boxes[:,2]-boxes[:,0], boxes[:,3]-boxes[:,1]   
+        x1, y1 = boxes[:,0], boxes[:,1]
+        corners = np.vstack((x1,y1, x1+width,y1, x1,y1+height, x1+width,y1+height)).T # x1,y1,x2,y2,x3,y3,x4,y4
+        corners = corners.reshape(-1,2)
+
+        # Apply rotation to all corners
+        corners = np.hstack((corners, np.ones((corners.shape[0],1))))
+        corners = np.dot(M,corners.T).T
+        corners = corners.reshape(-1,8)
+
+        # Compute new bounding boxes
+        x_, y_ = corners[:,[0,2,4,6]], corners[:,[1,3,5,7]]        
+        boxes = np.vstack((np.min(x_,1), np.min(y_,1), np.max(x_,1), np.max(y_,1))).T # (xmin, ymin, xmax, ymax)
+
+        # PART 4: ADJUST FOR SCALE CHANGE
+        # Resize the image and boxes to original dimensions
+        img = cv2.resize(img, (W,H))
+        scale_x, scale_y = nW/W, nH/H
+        boxes /= [scale_x, scale_y, scale_x, scale_y] 
+        targets["boxes"] = boxes
+    
+        return img, targets
+
+
 class RandomHSV(object):
     def __init__(self, brightness=(-10, 10), contrast=(.8, 1.5), saturation=(-10, 10), hue=(-5, 5)):
         self._brightness = brightness
@@ -124,7 +182,8 @@ def get_transform_fn(for_training):
 
     if for_training or True: # TODO
         transforms.extend([
-            RandomScale(scale=.5),
+            RandomRotate(),
+            RandomScale(),
             RandomHSV(),
         ])
 
