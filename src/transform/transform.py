@@ -1,4 +1,5 @@
 import random
+from copy import copy
 
 import numpy as np
 import cv2
@@ -34,28 +35,48 @@ class RandomScale(object):
         H, W, C = img.shape
         img = cv2.resize(img, None, fx=scale_x, fy=scale_y)
         
-        y_pad = H - int(min(scale_y,1)*H)
-        x_pad = W - int(min(scale_x,1)*W)
-        y_min, y_max = ceil(y_pad/2.), H-floor(y_pad/2.)
-        x_min, x_max = ceil(x_pad/2.), W-floor(x_pad/2.)
+        new_H, new_W, _ = img.shape
+        y_pad = H - new_H
+        x_pad = W - new_W
+        # When we scale, with a factor >1 some part of the image must be dropped,
+        # We handle this via a ._pad<0 and we make sure we drop the same amount on each side of the image
+        # ie the center of the image remains fixes
+        # Same for factors <1, describing padding of size ._pad>0 to be added
+        y_pad_1, y_pad_2 = ceil(y_pad/2.), floor(y_pad/2.)
+        x_pad_1, x_pad_2 = ceil(x_pad/2.), floor(x_pad/2.)
 
         canvas = np.zeros((H, W, C), dtype=np.uint8)
-        canvas[y_min:y_max, x_min:x_max, :] = img[:H-y_pad, :W-x_pad, :]
+   
+        canvas[max(y_pad_1,0):min(H-y_pad_2,H), max(x_pad_1,0):min(W-x_pad_2,W), :] = \
+            img[max(-y_pad_1,0):H-y_pad_1, max(-x_pad_1,0):W-x_pad_1, :]
         img = canvas
     
         targets["boxes"] *= [scale_x, scale_y, scale_x, scale_y]
-        targets["boxes"] -= [(scale_x-1)*W/2, (scale_y-1)*H/2, (scale_x-1)*W/2, (scale_y-1)*H/2]
-        targets = clip_boxes(targets, Box(x_min, y_min, x_max, y_max))
+        targets["boxes"] += [x_pad/2, y_pad/2, x_pad/2, y_pad/2]
+        targets = clip_boxes(targets, Box(0,0,W,H))
     
         return img, targets
 
 
 class RandomHSV(object):
-    def __init__(self, brightness=0, contrast=0, saturation=0, hue=0):
-        self._transform = tv_transforms.ColorJitter(brightness, contrast, saturation, hue)
+    def __init__(self, brightness=(-10, 10), contrast=(.8, 1.5), saturation=(-10, 10), hue=(-5, 5)):
+        self._brightness = brightness
+        self._contrast = contrast
+        self._saturation = saturation
+        self._hue = hue
 
     def __call__(self, img, targets):
-        return self._transform(img), targets
+        alpha = random.uniform(*self._contrast)  # (0, 1, 3) (min, neutral, max)
+        beta = random.uniform(*self._brightness)   # (-100, 0, 100)
+        img = cv2.convertScaleAbs(img, alpha=alpha, beta=beta)
+
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2HSV).astype("float32")
+        img[:,:,0] += random.randint(*self._hue)
+        img[:,:,1] += random.randint(*self._saturation)
+        img = np.clip(img, 0, 255)
+        img = cv2.cvtColor(img.astype("uint8"), cv2.COLOR_HSV2RGB)
+
+        return img, targets
 
 
 class ToNumpyArray(object):
@@ -88,7 +109,11 @@ class Compose(object):
 
     def __call__(self, img, targets):
         for t in self.transforms:
-            img, targets = t(img, targets)
+            new_img, new_targets = t(copy(img), copy(targets))
+            if len(new_targets["labels"]):
+                # If the transformation removes all objects from the image, we keep the original
+                img, targets = new_img, new_targets
+
         return img, targets
 
 
@@ -100,7 +125,7 @@ def get_transform_fn(for_training):
     if for_training or True: # TODO
         transforms.extend([
             RandomScale(scale=.5),
-            # RandomHSV(brightness=.5, contrast=.5, saturation=.5)
+            RandomHSV(),
         ])
 
     transforms.extend([
