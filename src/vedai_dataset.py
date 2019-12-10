@@ -2,6 +2,7 @@ from os import path, listdir
 import logging
 import random
 import csv
+import sys
 
 from torch.utils.data import Dataset
 import torch
@@ -106,6 +107,31 @@ class VedaiDataset(Dataset):
         images = torch.stack(images, dim=0)
 
         return images, targets
+
+
+if __name__ == "__main__":
+    import numpy as np
+    logging.basicConfig(
+        stream=sys.stdout,
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s")
+
+    training_dataset = VedaiDataset(for_training=False)
+
+    images = []
+    for i, (img, _) in enumerate(training_dataset):
+        if i > 200:
+            break
+        images.append(img)
+
+    images = np.stack(images)  # (N, C, H, W)
+
+    mean = images.mean(axis=(0,2,3))
+    logging.info("Pixel mean: %s", images.mean(axis=(0,2,3)))
+    logging.info("Pixel std: %s", images.std(axis=(0,2,3)))
+    
+
+
         
 
 

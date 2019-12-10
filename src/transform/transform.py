@@ -1,5 +1,6 @@
 import random
 from copy import copy
+import math
 
 import numpy as np
 import cv2
@@ -9,10 +10,6 @@ from torchvision import transforms as tv_transforms
 
 from transform.bbox_utils import clip_boxes
 from utils import Box
-import math
-
-def ceil(x): return int(math.ceil(x))
-def floor(x): return int(math.floor(x))
 
 
 class RandomHSV(object):
@@ -145,6 +142,9 @@ class RandomShear(object):
         return img, targets
 
 
+def ceil(x): return int(math.ceil(x))
+def floor(x): return int(math.floor(x))
+
 class RandomScale(object):
    
     def __init__(self, scale=0.2, symmetric=False):
@@ -175,7 +175,7 @@ class RandomScale(object):
         y_pad_1, y_pad_2 = ceil(y_pad/2.), floor(y_pad/2.)
         x_pad_1, x_pad_2 = ceil(x_pad/2.), floor(x_pad/2.)
 
-        canvas = np.zeros((H, W, C), dtype=np.uint8)
+        canvas = np.zeros((H, W, C))
    
         canvas[max(y_pad_1,0):min(H-y_pad_2,H), max(x_pad_1,0):min(W-x_pad_2,W), :] = \
             img[max(-y_pad_1,0):H-y_pad_1, max(-x_pad_1,0):W-x_pad_1, :]
@@ -198,7 +198,7 @@ class RandomTranslate(object):
         move_y = int(random.uniform(-self._rel_step, self._rel_step) * H)
         move_x = int(random.uniform(-self._rel_step, self._rel_step) * W)
 
-        canvas = np.zeros((H, W, C), dtype=np.uint8)
+        canvas = np.zeros((H, W, C), dtype=np.float)
    
         canvas[max(move_y,0):min(H+move_y, H), max(move_x,0):min(W+move_x, W), :] = \
             img[max(-move_y,0):min(H-move_y, H), max(-move_x,0):min(W-move_x, W), :]
@@ -207,6 +207,31 @@ class RandomTranslate(object):
         targets["boxes"] += [move_x, move_y, move_x, move_y]
         targets = clip_boxes(targets, Box(0,0,W,H))
 
+        return img, targets
+
+
+class Normalize(object):
+    # https://github.com/pytorch/vision/blob/master/torchvision/models/detection/faster_rcnn.py#L228
+    _IMAGE_MEAN = [0.485*255, 0.456*255, 0.406*255]
+    _IMAGE_STD = [0.229*255, 0.224*255, 0.225*255]
+
+    def __init__(self, forward=True):
+        """ Some transformations dd a blakc background
+            This makes sure it end up as grey ie the pixel average
+        """
+        self._forward = forward
+
+    def __call__(self, img, targets):
+        if self._forward:
+            img = img.astype("float32")
+            img -= self._IMAGE_MEAN
+            img /= self._IMAGE_STD
+
+        else:
+            img *= self._IMAGE_STD
+            img += self._IMAGE_MEAN
+            img = img.astype("uint8")
+    
         return img, targets
 
 
@@ -256,11 +281,13 @@ def get_transform_fn(for_training):
     if for_training or True: # TODO
         transforms.extend([
             RandomHSV(),
+            Normalize(forward=True),
             RandomAxisFlip(),
             RandomRotate(),
             RandomShear(),
             RandomScale(),
             RandomTranslate(),
+            Normalize(forward=False),
         ])
 
     transforms.extend([
