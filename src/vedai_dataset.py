@@ -5,7 +5,6 @@ import csv
 import sys
 
 from torch.utils.data import Dataset
-import torch
 from PIL import Image
 
 from transform.transform import get_transform_fn
@@ -87,7 +86,7 @@ class VedaiDataset(Dataset):
                 labels.append(int(r["label"]))
 
         target = dict(boxes=boxes, labels=labels)
-        return self._transform(image, target)
+        return image, target
 
 
     def __len__(self):
@@ -96,17 +95,6 @@ class VedaiDataset(Dataset):
     @staticmethod
     def get_labels_dict():
         return LABELS_DICT
-
-    def collate_fn(self, batch):
-        images = []
-        targets = []
-        for image, target in batch:
-            images.append(image)
-            targets.append(target)
-
-        images = torch.stack(images, dim=0)
-
-        return images, targets
 
 
 if __name__ == "__main__":

@@ -1,10 +1,12 @@
 import random
 from copy import copy
 import math
+from itertools import cycle
 
 import numpy as np
 import cv2
 
+from torch.utils.data import DataLoader
 import torch
 from torchvision import transforms as tv_transforms
 
@@ -61,7 +63,7 @@ class RandomAxisFlip(object):
 
 class RandomRotate(object):
    
-    def __init__(self, angle=180):
+    def __init__(self, angle=20):
         self._angle = angle
 
     def __call__(self, img, targets):
@@ -297,5 +299,31 @@ def get_transform_fn(for_training):
     transform = Compose(transforms)
 
     return transform
+
+def get_transform_collate_fn(for_training):
+    transform = get_transform_fn(for_training)
+    def collate(batch):
+        images = []
+        targets = []
+        for image, target in batch:
+            image, target = transform(image, target)
+            images.append(image)
+            targets.append(target)
+
+        images = torch.stack(images, dim=0)
+
+        return images, targets
+
+    return collate
+
+
+def get_train_val_iters(dataset_cls, batch_size):
+    def get_loader(for_training):
+        return DataLoader(dataset_cls(for_training), batch_size=batch_size, shuffle=for_training, collate_fn=get_transform_collate_fn(for_training))
+    training_loader = get_loader(True)
+    validation_loader = get_loader(False)
+    training_iter = cycle(iter(training_loader))
+    validation_iter = cycle(iter(validation_loader))
+    return training_iter, validation_iter
     
 
