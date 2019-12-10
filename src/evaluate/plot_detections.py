@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 
-MIN_SCORE = 0.5
+MIN_SCORE = 1.
 LOG_DIR = "./data/logs/"
 
 def _plot_bounding_boxes(locations, ax, is_ground_truth):
