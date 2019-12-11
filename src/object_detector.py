@@ -1,7 +1,8 @@
 import logging 
 import time
-from os import path
+from os import path, makedirs
 from copy import deepcopy
+from datetime import datetime
 
 
 import requests
@@ -47,17 +48,12 @@ class ObjectDetector():
         model.to(device)
 
         return model
-
-
-    def _run_model(self, inputs, targets=None):
-        """ Transform the _model function into a pure function """
-        return self._model(inputs, deepcopy(targets))
         
 
     def train(self, dataset_cls):
         training_iter, validation_iter = get_train_val_iters(dataset_cls, config.BATCH_SIZE)
         labels_dict = dataset_cls.get_labels_dict()
-        summary_writer = SummaryWriter(log_dir=config.LOG_DIR)
+        summary_writer, stats_file_path = self._init_train_loggers()
         # summary_writer.add_graph(self._model, next(training_iter)[0])
         gradient_schedule = GradientSchedule(self._model)
 
@@ -70,7 +66,7 @@ class ObjectDetector():
                 metrics.update(self._run_train_eval_step(validation_iter, labels_dict, step))
                 metrics.update(gradient_schedule.update(metrics["Loss/train"]))
                 # raise 
-                self._log_metrics(summary_writer, metrics, step)
+                self._log_metrics(summary_writer, stats_file_path, metrics, step)
                 self._checkpoint_model()
 
 
@@ -97,7 +93,7 @@ class ObjectDetector():
         images, targets = next(validation_iter)
         
         losses = self._run_model(images, targets)
-        loss = sum(losses.values())  # TODO: add weighting
+        loss = sum(losses.values()).item()  # TODO: add weighting
 
         ground_truths, detections = self.get_ground_truths_and_detections(images, targets, labels_dict)
         mAP = get_mean_average_precision(ground_truths, detections)
@@ -124,18 +120,41 @@ class ObjectDetector():
         }
         file_path = path.join(config.CHECKPOINT_DIR, config.CHECKPOINT_NAME)
         torch.save(state, file_path)
+    
+
+    @staticmethod
+    def _init_train_loggers():
+        summary_writer = SummaryWriter(log_dir=path.join(config.LOG_DIR, "tf_boards"))
+        stats_filename = datetime.now().strftime('%Y%m%d_%H%M') + ".csv"
+        stats_file_path = path.join(config.LOG_DIR, "stats", stats_filename)
+        if not path.isdir(path.dirname(stats_file_path)):
+            makedirs(path.dirname(stats_file_path))
+        return summary_writer, stats_file_path
 
 
     @staticmethod
-    def _log_metrics(writer, metrics, step):
+    def _log_metrics(summary_writer, stats_file_path,  metrics, step):
         logging.info("\tStep: %s \ttrain-loss: %.2f \teval-loss: %.2f \tmAP: %.4f",
                         step, metrics["Loss/train"], metrics["Loss/val"], metrics["mAP/val"])
 
+        headers = [tag for tag in sorted(metrics.keys()) if not tag.startswith("Image")]
+        if not path.isfile(stats_file_path):
+            with open(stats_file_path, "w") as fp:
+                fp.write(",".join(headers)+"\n")
+        
+        with open(stats_file_path, "a") as fp:
+            fp.write(",".join(str(metrics[t]) for t in headers)+"\n")
+
         for tag, value in metrics.items():
             if tag.startswith("Image"):
-                writer.add_figure(tag, value, step)
+                summary_writer.add_figure(tag, value, step)
             else:
-                writer.add_scalar(tag, value, step)
+                summary_writer.add_scalar(tag, value, step)
+
+
+    def _run_model(self, inputs, targets=None):
+        """ Transform the _model function into a pure function """
+        return self._model(inputs, deepcopy(targets))
 
 
     def _get_current_step(self):

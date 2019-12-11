@@ -3,9 +3,10 @@ from os import path
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
+import config
 
-MIN_SCORE = 1.
-LOG_DIR = "./data/logs/"
+
+MIN_SCORE = .05
 
 def _plot_bounding_boxes(locations, ax, is_ground_truth):
     color = 'c' if is_ground_truth else 'b'
@@ -32,7 +33,7 @@ def plot_detections(image, ground_truths, detections):
     _plot_bounding_boxes(ground_truths, ax, is_ground_truth=True)
     _plot_bounding_boxes(detections, ax, is_ground_truth=False)
 
-    fig_path = path.join(LOG_DIR, "detections.png")
+    fig_path = path.join(config.LOG_DIR, "detections.png")
     fig.savefig(fig_path)
 
     return fig

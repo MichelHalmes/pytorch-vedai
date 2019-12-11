@@ -5,9 +5,9 @@ Phase = namedtuple("Phase", ["loss_threshold_next", "gradient_param_prefixes"])
 
 MA_ALPHA = .2
 SCHEDULE = [
-    (8., ["roi_heads.box_predictor"]),
-    (8., ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred"]),
-    (8., ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred", "roi_heads.box_head.fc7"]),
+    (1.5, ["roi_heads.box_predictor"]),
+    (1., ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred"]),
+    (.5, ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred", "roi_heads.box_head.fc7"]),
     (0., ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred", "roi_heads.box_head"]),
 ]
 

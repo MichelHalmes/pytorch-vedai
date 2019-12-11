@@ -29,7 +29,6 @@ class DotaDataset(MyDataset):
 
     _REVERSE_LABELS_DICT = {name: id_ for id_, name in _LABELS_DICT.items() if id_ is not None}
 
-
     def _load_target(self, image_id, img_size=None):
         annotation_path = path.join(config.DATA_PATH.format(name=self._NAME), config.ANNOTATIONS_PATH.format(id_=image_id))
         with open(annotation_path) as fp:
@@ -52,7 +51,6 @@ class DotaDataset(MyDataset):
                 labels.append(label_id)
 
         return dict(boxes=boxes, labels=labels)
-
 
 
 if __name__ == "__main__":
