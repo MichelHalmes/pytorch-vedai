@@ -11,17 +11,18 @@ import sys
 import click
 import numpy as np
 
-from vedai_dataset import VedaiDataset
+from datasets.vedai import VedaiDataset
+from datasets.dota import DotaDataset
 from object_detector import ObjectDetector
 
 
 @click.command()
 @click.option('--restore/--no-restore', default=True, help='Reinititalize the model or restore previous checkpoint')
 def train_model(restore):
-    num_classes = len(VedaiDataset.get_labels_dict())
+    num_classes = len(DotaDataset.get_labels_dict())
     detector = ObjectDetector(num_classes, restore)
 
-    detector.train(VedaiDataset)
+    detector.train(DotaDataset)
  
 
 if __name__ == "__main__":

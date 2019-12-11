@@ -14,7 +14,6 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 
-from vedai_dataset import VedaiDataset
 from evaluate.mean_average_precision import get_mean_average_precision
 from evaluate.intersection_over_union import non_maximum_suppression
 from evaluate.plot_detections import plot_detections
@@ -38,13 +37,10 @@ class ObjectDetector():
 
     def _init_pretrained_model(self, num_classes):
         model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE, box_nms_thresh=.3)
-        for _, parameter in model.named_parameters():
-            parameter.requires_grad_(False)
 
         box_predictor = FastRCNNPredictor(
             in_channels=model.roi_heads.box_head.fc7.out_features,
             num_classes=num_classes)
-
         model.roi_heads.box_predictor = box_predictor
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -62,9 +58,8 @@ class ObjectDetector():
         training_iter, validation_iter = get_train_val_iters(dataset_cls, config.BATCH_SIZE)
         labels_dict = dataset_cls.get_labels_dict()
         summary_writer = SummaryWriter(log_dir=config.LOG_DIR)
-        gradient_schedule = GradientSchedule(self._model)
-        gradient_schedule.print_trainable_parameters()
         # summary_writer.add_graph(self._model, next(training_iter)[0])
+        gradient_schedule = GradientSchedule(self._model)
 
         metrics = {}
         while True:
@@ -110,6 +105,7 @@ class ObjectDetector():
 
         return {"Loss/val": loss, "mAP/val": mAP, "Image/detections/val": figure}
 
+
     def get_ground_truths_and_detections(self, images, targets, labels_dict):   
         with evaluating(self._model):
             predictions = self._run_model(images)
@@ -129,6 +125,7 @@ class ObjectDetector():
         file_path = path.join(config.CHECKPOINT_DIR, config.CHECKPOINT_NAME)
         torch.save(state, file_path)
 
+
     @staticmethod
     def _log_metrics(writer, metrics, step):
         logging.info("\tStep: %s \ttrain-loss: %.2f \teval-loss: %.2f \tmAP: %.4f",
@@ -139,6 +136,7 @@ class ObjectDetector():
                 writer.add_figure(tag, value, step)
             else:
                 writer.add_scalar(tag, value, step)
+
 
     def _get_current_step(self):
         params = self._optimizer.state.values()

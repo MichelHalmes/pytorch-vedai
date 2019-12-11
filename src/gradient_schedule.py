@@ -1,13 +1,14 @@
 import logging
 from collections import namedtuple
 
-Phase = namedtuple("Phase", ["loss_threshold", "gradient_param_prefixes"])
+Phase = namedtuple("Phase", ["loss_threshold_next", "gradient_param_prefixes"])
 
 MA_ALPHA = .2
 SCHEDULE = [
-    (8., ["roi_heads.box_predictor", "roi_heads.box_head.fc7"]),
-    (8., ["roi_heads.box_predictor", "roi_heads.box_head"]),
-    (8., ["roi_heads.box_predictor", "roi_heads.box_head", "rpn.head.cls_logits", "rpn.head.bbox_pred"]),
+    (8., ["roi_heads.box_predictor"]),
+    (8., ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred"]),
+    (8., ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred", "roi_heads.box_head.fc7"]),
+    (0., ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred", "roi_heads.box_head"]),
 ]
 
 class GradientSchedule(object):
@@ -17,29 +18,35 @@ class GradientSchedule(object):
         self._model = model
         self._schedule = schedule
         self._phase_idx = 0
+    
+        self._activate_gradients()
+
 
     def update(self, loss):
         if self._ma_loss is None:
             self._ma_loss = loss
         else:
             self._ma_loss = MA_ALPHA*loss + (1-MA_ALPHA)*self._ma_loss
-        
-        if self._phase_idx >= len(self._schedule):
-            return
 
-        loss_threshold = self._schedule[self._phase_idx][0]
-        if self._ma_loss < loss_threshold:
+        loss_threshold_next = self._schedule[self._phase_idx][0]
+        if self._ma_loss < loss_threshold_next:
+            self._phase_idx += 1
+            self._activate_gradients()
+
+        nb_params = sum(p.numel() for p in self._model.parameters() if p.requires_grad)
+        return {"Schedule/ma_loss": self._ma_loss, "Schedule/phase": self._phase_idx, "Scheduler/nb_train_params": nb_params}
+
+
+    def _activate_gradients(self):
+            logging.info("Gradient schedule activated phase %s", self._phase_idx)
             gradient_param_prefixes = self._schedule[self._phase_idx][1]
             for name, parameter in self._model.named_parameters():
                 if any(name.startswith(prefix) for prefix in gradient_param_prefixes):
                     parameter.requires_grad_(True)
-            logging.info("Gradient schedule activated phase %s", self._phase_idx)
+                else:
+                    parameter.requires_grad_(False)
             self.print_trainable_parameters()
-            self._phase_idx += 1
 
-        nb_params = sum(p.numel() for p in self._model.parameters() if p.requires_grad)
-
-        return {"Schedule/ma_loss": self._ma_loss, "Schedule/phase": self._phase_idx, "Scheduler/nb_train_params": nb_params}
 
     def print_trainable_parameters(self):
         nb_params = 0
@@ -49,18 +56,5 @@ class GradientSchedule(object):
                 nb_params += parameter.numel()
                 logging.info("\t%s (%s)", name, parameter.numel())
     
-        logging.info("Model has %s trainable parameters", nb_params)
-
-
-        
-
-
-
-
-
-
-
-
-
-
+        logging.info("Model has {:20,d} trainable parameters".format(nb_params))
 

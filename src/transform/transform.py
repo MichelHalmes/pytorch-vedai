@@ -238,15 +238,20 @@ class Normalize(object):
 
 
 class ToNumpyArray(object):
-    def __init__(self):
-        pass
     
     def __call__(self, img, targets):
-        img = np.asarray(img)
+        img = np.array(img)
         targets["boxes"] = np.asarray(targets["boxes"])
         targets["labels"] = np.asarray(targets["labels"])
         return img, targets
 
+class ClipBoxes(object):
+    """ Limits all incoming boxes to be contained in the image """
+
+    def __call__(self, img, targets):
+        H, W, _ = img.shape
+        targets = clip_boxes(targets, Box(0,0,W,H))
+        return img, targets
 
 class ToPytorchTensor(object):
     def __init__(self):
@@ -277,7 +282,8 @@ class Compose(object):
 
 def get_transform_fn(for_training):
     transforms = [
-        ToNumpyArray()
+        ToNumpyArray(),
+        ClipBoxes(),
     ]
 
     if for_training or True: # TODO
