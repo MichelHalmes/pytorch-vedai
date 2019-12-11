@@ -19,10 +19,14 @@ from object_detector import ObjectDetector
 @click.command()
 @click.option('--restore/--no-restore', default=True, help='Reinititalize the model or restore previous checkpoint')
 def train_model(restore):
-    num_classes = len(DotaDataset.get_labels_dict())
-    detector = ObjectDetector(num_classes, restore)
+    num_classes = max(
+        len(DotaDataset.get_labels_dict()),
+        len(VedaiDataset.get_labels_dict())
+    )
 
+    detector = ObjectDetector(num_classes, restore)
     detector.train(DotaDataset)
+    detector.train(VedaiDataset)
  
 
 if __name__ == "__main__":
@@ -32,10 +36,5 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(message)s")
 
     train_model()
-
-
-
-
-
 
 

@@ -21,7 +21,6 @@ class GradientSchedule(object):
     
         self._activate_gradients()
 
-
     def update(self, loss):
         if self._ma_loss is None:
             self._ma_loss = loss
@@ -36,7 +35,6 @@ class GradientSchedule(object):
         nb_params = sum(p.numel() for p in self._model.parameters() if p.requires_grad)
         return {"Schedule/ma_loss": self._ma_loss, "Schedule/phase": self._phase_idx, "Scheduler/nb_train_params": nb_params}
 
-
     def _activate_gradients(self):
             logging.info("Gradient schedule activated phase %s", self._phase_idx)
             gradient_param_prefixes = self._schedule[self._phase_idx][1]
@@ -47,7 +45,6 @@ class GradientSchedule(object):
                     parameter.requires_grad_(False)
             self.print_trainable_parameters()
 
-
     def print_trainable_parameters(self):
         nb_params = 0
         logging.info("Trainable parameters:")
@@ -56,5 +53,5 @@ class GradientSchedule(object):
                 nb_params += parameter.numel()
                 logging.info("\t%s (%s)", name, parameter.numel())
     
-        logging.info("Model has {:20,d} trainable parameters".format(nb_params))
+        logging.info("Model has {:,d} trainable parameters".format(nb_params))
 
