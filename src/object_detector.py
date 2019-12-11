@@ -21,21 +21,19 @@ from evaluate.plot_detections import plot_detections
 from utils import Box, Location, evaluating, format_object_locations
 from transform.transform import get_train_val_iters
 import config
+from gradient_schedule import GradientSchedule
 
 
 class ObjectDetector():
 
     def __init__(self, num_classes, restore):
         self._model = self._init_pretrained_model(num_classes)
-        print(self._model)
         self._optimizer = torch.optim.Adam(self._model.parameters(), lr=.0001)
         if restore:
             file_path = path.join(config.CHECKPOINT_DIR, config.CHECKPOINT_NAME)
             state = torch.load(file_path)
             self._model.load_state_dict(state["model"])
             self._optimizer.load_state_dict(state["optimizer"])
-        nb_params = sum(p.numel() for p in self._model.parameters() if p.requires_grad)
-        logging.info("Detector has %s trainable parameters", nb_params)
 
 
     def _init_pretrained_model(self, num_classes):
@@ -55,7 +53,7 @@ class ObjectDetector():
         return model
 
 
-    def _run_model(self, inputs, targets):
+    def _run_model(self, inputs, targets=None):
         """ Transform the _model function into a pure function """
         return self._model(inputs, deepcopy(targets))
         
@@ -64,6 +62,8 @@ class ObjectDetector():
         training_iter, validation_iter = get_train_val_iters(dataset_cls, config.BATCH_SIZE)
         labels_dict = dataset_cls.get_labels_dict()
         summary_writer = SummaryWriter(log_dir=config.LOG_DIR)
+        gradient_schedule = GradientSchedule(self._model)
+        gradient_schedule.print_trainable_parameters()
         # summary_writer.add_graph(self._model, next(training_iter)[0])
 
         metrics = {}
@@ -73,6 +73,7 @@ class ObjectDetector():
 
             if step % config.EVAL_STEPS == 0:
                 metrics.update(self._run_train_eval_step(validation_iter, labels_dict, step))
+                metrics.update(gradient_schedule.update(metrics["Loss/train"]))
                 # raise 
                 self._log_metrics(summary_writer, metrics, step)
                 self._checkpoint_model()
@@ -96,14 +97,14 @@ class ObjectDetector():
                         step, loss, time_data-time_start, time_fwd-time_data, time_back-time_fwd)
         return {"Loss/train": loss}
 
+
     def _run_train_eval_step(self, validation_iter, labels_dict, step):
         images, targets = next(validation_iter)
         
         losses = self._run_model(images, targets)
-        print(losses)
         loss = sum(losses.values())  # TODO: add weighting
-        ground_truths, detections = self.get_ground_truths_and_detections(images, targets, labels_dict)
 
+        ground_truths, detections = self.get_ground_truths_and_detections(images, targets, labels_dict)
         mAP = get_mean_average_precision(ground_truths, detections)
         figure = plot_detections(images[0], ground_truths[0], detections[0])
 
@@ -111,7 +112,7 @@ class ObjectDetector():
 
     def get_ground_truths_and_detections(self, images, targets, labels_dict):   
         with evaluating(self._model):
-            predictions = self._run_model(images, targets) # TODO: why not targets None?
+            predictions = self._run_model(images)
 
         ground_truths = [format_object_locations(target_dict, labels_dict, batch_id) \
                         for batch_id, target_dict in enumerate(targets)]
