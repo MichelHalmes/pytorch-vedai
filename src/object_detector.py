@@ -19,7 +19,7 @@ from evaluate.mean_average_precision import get_mean_average_precision
 from evaluate.intersection_over_union import non_maximum_suppression
 from evaluate.plot_detections import plot_detections
 from utils import Box, Location, evaluating, format_object_locations
-from transform.transform import get_train_val_iters
+from data_manip.transform import get_train_val_iters
 import config
 from gradient_schedule import GradientSchedule
 
@@ -37,7 +37,7 @@ class ObjectDetector():
 
 
     def _init_pretrained_model(self, num_classes):
-        model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE, box_nms_thresh=.3)
+        model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE, box_nms_thresh=.5)
 
         box_predictor = FastRCNNPredictor(
             in_channels=model.roi_heads.box_head.fc7.out_features,
@@ -137,17 +137,22 @@ class ObjectDetector():
         logging.info("\tStep: %s \ttrain-loss: %.2f \teval-loss: %.2f \tmAP: %.4f",
                         step, metrics["Loss/train"], metrics["Loss/val"], metrics["mAP/val"])
 
+        metrics["*Step"] = step
+        metrics["*Time"] = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+
         headers = [tag for tag in sorted(metrics.keys()) if not tag.startswith("Image")]
         if not path.isfile(stats_file_path):
             with open(stats_file_path, "w") as fp:
-                fp.write(",".join(headers)+"\n")
+                fp.write(";\t".join(headers) + "\n")
         
         with open(stats_file_path, "a") as fp:
-            fp.write(",".join(str(metrics[t]) for t in headers)+"\n")
+            fp.write(";\t".join(str(metrics[t]) for t in headers) + "\n")
 
         for tag, value in metrics.items():
             if tag.startswith("Image"):
                 summary_writer.add_figure(tag, value, step)
+            elif tag.startswith("*"):
+                continue
             else:
                 summary_writer.add_scalar(tag, value, step)
 

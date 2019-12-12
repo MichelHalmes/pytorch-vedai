@@ -1,7 +1,5 @@
 
 
-
-
 # More data
 # https://en.wikipedia.org/wiki/Overhead_Imagery_Research_Data_Set
 

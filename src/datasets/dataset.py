@@ -16,11 +16,14 @@ class MyDataset(object):
     def __init__(self, for_training):
         self._image_ids = self._load_image_ids(for_training)
 
+
     def _load_target(self, image_id, img_size=None):
         raise NotImplementedError()
 
+
     def _annotation_path(self, image_id):
         return path.join(config.DATA_PATH.format(name=self._NAME), config.ANNOTATIONS_PATH.format(id_=image_id))
+
 
     def _load_and_filter_image_ids(self):
         images_dir = path.dirname(path.join(config.DATA_PATH.format(name=self._NAME), config.IMAGES_PATH))
@@ -36,6 +39,7 @@ class MyDataset(object):
             else:
                 image_ids.append(image_id)
         return image_ids
+
 
     def _load_image_ids(self, for_training):
         image_ids = self._load_and_filter_image_ids()
@@ -53,25 +57,27 @@ class MyDataset(object):
         
         return image_ids
 
+
     def __getitem__(self, i):
         image_id = self._image_ids[i]
         image_path = path.join(config.DATA_PATH.format(name=self._NAME), config.IMAGES_PATH.format(id_=image_id))
         image = Image.open(image_path)
-        if image.mode == "L":
-            print("3DELLLLLL", image_id)
-            rename(image_path, image_path+".out")
-            return self[i+1]
+        assert image.mode == "RGB", f"Bad image {image_id} with mode {image.mode}"
 
         target = self._load_target(image_id, image.size)
         image, target = self._crop_to_size(image, target)
 
         return image, target
 
+
     def __len__(self):
         return len(self._image_ids)
 
+
     @classmethod
     def _crop_to_size(cls, image, target):
+        # Dota contains images of differnt size, but each pixel represents the same scale
+        # Make sure all images are at the same scale by croping to a maximum size
         H, W = image.size[::-1]  # PIL returns W, H
         nH, nW = config.CROP_TO_SIZE
         nH, nW = min(H, nH), min(W, nW)
@@ -91,6 +97,7 @@ class MyDataset(object):
             return cls._crop_to_size(image, target)
         else:
             return new_image, new_target
+
 
     @classmethod
     def get_labels_dict(cls):

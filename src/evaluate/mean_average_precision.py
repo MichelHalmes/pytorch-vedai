@@ -24,7 +24,7 @@ def calculate_average_precision(recall, precision):
 
 def get_pascal_voc_metrics(ground_truths,
                         detections,
-                        IOUThreshold=0.005): # TODO: IOUThreshold=.5
+                        IOUThreshold=0.5):
     """Get the metrics used by the VOC Pascal 2012 challenge.
     Get
     Args:

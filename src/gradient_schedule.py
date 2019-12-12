@@ -5,9 +5,9 @@ Phase = namedtuple("Phase", ["loss_threshold_next", "gradient_param_prefixes"])
 
 MA_ALPHA = .2
 SCHEDULE = [
-    (1.5, ["roi_heads.box_predictor"]),
-    (1., ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred"]),
-    (.5, ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred", "roi_heads.box_head.fc7"]),
+    (2.5, ["roi_heads.box_predictor"]),
+    (2.0, ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred"]),
+    (1.8, ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred", "roi_heads.box_head.fc7"]),
     (0., ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred", "roi_heads.box_head"]),
 ]
 
@@ -23,7 +23,7 @@ class GradientSchedule(object):
 
     def update(self, loss):
         if self._ma_loss is None:
-            self._ma_loss = loss
+            self._ma_loss = loss*2  # We muliply to avoid a lucky first loss triggering the next phase...
         else:
             self._ma_loss = MA_ALPHA*loss + (1-MA_ALPHA)*self._ma_loss
 

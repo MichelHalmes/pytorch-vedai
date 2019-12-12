@@ -6,12 +6,10 @@ import matplotlib.patches as patches
 import config
 
 
-MIN_SCORE = .05
-
 def _plot_bounding_boxes(locations, ax, is_ground_truth):
     color = 'c' if is_ground_truth else 'b'
     for _, label, score, box in locations:
-        if score < MIN_SCORE:
+        if score < config.PLOT_DETECTIONS_MIN_SCORE:
             continue
             
         x_min, y_min, x_max, y_max = box

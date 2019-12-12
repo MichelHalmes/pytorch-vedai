@@ -1,16 +1,10 @@
 import random
-from copy import copy
 import math
-from itertools import cycle
 
 import numpy as np
 import cv2
 
-from torch.utils.data import DataLoader
-import torch
-from torchvision import transforms as tv_transforms
-
-from transform.bbox_utils import clip_boxes
+from data_manip.bbox_utils import clip_boxes
 from utils import Box
 
 
@@ -218,7 +212,7 @@ class Normalize(object):
     _IMAGE_STD = [0.229*255, 0.224*255, 0.225*255]
 
     def __init__(self, forward=True):
-        """ Some transformations dd a blakc background
+        """ Some transformations dd a black background
             This makes sure it end up as grey ie the pixel average
         """
         self._forward = forward
@@ -237,99 +231,4 @@ class Normalize(object):
         return img, targets
 
 
-class ToNumpyArray(object):
-    
-    def __call__(self, img, targets):
-        img = np.array(img)
-        targets["boxes"] = np.asarray(targets["boxes"])
-        targets["labels"] = np.asarray(targets["labels"])
-        return img, targets
-
-class ClipBoxes(object):
-    """ Limits all incoming boxes to be contained in the image """
-
-    def __call__(self, img, targets):
-        H, W, _ = img.shape
-        targets = clip_boxes(targets, Box(0,0,W,H))
-        return img, targets
-
-class ToPytorchTensor(object):
-    def __init__(self):
-        self._img_transform = tv_transforms.ToTensor()
-    
-    def __call__(self, img, targets):
-        targets = {
-            "boxes": torch.FloatTensor(targets["boxes"]), # (n_objects, 4)
-            "labels": torch.LongTensor(targets["labels"]) # (n_objects)
-        }
-        img = self._img_transform(img)
-        return img, targets
-
-
-class Compose(object):
-    def __init__(self, transforms):
-        self.transforms = transforms
-
-    def __call__(self, img, targets):
-        for t in self.transforms:
-            new_img, new_targets = t(copy(img), copy(targets))
-            if len(new_targets["labels"]):
-                # If the transformation removes all objects from the image, we keep the original
-                img, targets = new_img, new_targets
-
-        return img, targets
-
-
-def get_transform_fn(for_training):
-    transforms = [
-        ToNumpyArray(),
-        ClipBoxes(),
-    ]
-
-    if for_training or True: # TODO
-        transforms.extend([
-            RandomHSV(),
-            Normalize(forward=True),
-            RandomAxisFlip(),
-            RandomRotate(),
-            RandomShear(),
-            RandomScale(),
-            RandomTranslate(),
-            Normalize(forward=False),
-        ])
-
-    transforms.extend([
-        ToPytorchTensor(),
-    ])
-
-    transform = Compose(transforms)
-
-    return transform
-
-def get_transform_collate_fn(for_training):
-    transform = get_transform_fn(for_training)
-    def collate(batch):
-        images = []
-        targets = []
-        for image, target in batch:
-            image, target = transform(image, target)
-            images.append(image)
-            targets.append(target)
-
-        images = torch.stack(images, dim=0)
-
-        return images, targets
-
-    return collate
-
-
-def get_train_val_iters(dataset_cls, batch_size):
-    def get_loader(for_training):
-        return DataLoader(dataset_cls(for_training), batch_size=batch_size, shuffle=for_training, collate_fn=get_transform_collate_fn(for_training))
-    training_loader = get_loader(True)
-    validation_loader = get_loader(False)
-    training_iter = cycle(iter(training_loader))
-    validation_iter = cycle(iter(validation_loader))
-    return training_iter, validation_iter
-    
 
