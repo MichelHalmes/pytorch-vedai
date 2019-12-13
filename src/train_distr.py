@@ -17,6 +17,7 @@ from torch.multiprocessing import Process
 from datasets.vedai import VedaiDataset
 from datasets.dota import DotaDataset
 from object_detector import ObjectDetector
+import config
 
 
 def train_model(rank, kwargs):
@@ -28,6 +29,8 @@ def train_model(rank, kwargs):
 
     detector = ObjectDetector(num_classes, rank, **kwargs)
     detector.train(DotaDataset)
+    # Reset the step and hence gradient schedule
+    detector.init_training()
     detector.train(VedaiDataset)
  
  
@@ -36,13 +39,18 @@ def init_process(rank, size, run_fn, kwargs):
     os.environ["MASTER_ADDR"] = "127.0.0.1"
     os.environ["MASTER_PORT"] = "29500"
     dist.init_process_group(backend="gloo", rank=rank, world_size=size)
-    run_fn(rank, kwargs)
+    try:
+        run_fn(rank, kwargs)
+    except KeyboardInterrupt:
+        logging.info("Aborted")
+    finally:
+        dist.destroy_process_group()
 
 
 @click.command()
 @click.option("--restore/--no-restore", default=True, help="Reinititalize the model or restore previous checkpoint")
 def run_distributed(**kwargs):
-    SIZE = 6
+    SIZE = config.NB_PROCESSES
     processes = []
     for rank in range(SIZE):
         p = Process(target=init_process, args=(rank, SIZE, train_model, kwargs))

@@ -31,13 +31,17 @@ class ObjectDetector():
         self._model = self._init_pretrained_model(num_classes)
         self._rank = rank
         assert self._rank == dist.get_rank()
-        self._optimizer = torch.optim.Adam(self._model.parameters(), lr=.0001)
+        self.init_training()
         if restore:
             file_path = path.join(config.CHECKPOINT_DIR, config.CHECKPOINT_NAME)
             state = torch.load(file_path)
             self._model.load_state_dict(state["model"])
             self._optimizer.load_state_dict(state["optimizer"])
 
+    def init_training(self):
+        # Reset the step and gradient schedule
+        self._optimizer = torch.optim.Adam(self._model.parameters(), lr=.001)
+        self._gradient_schedule = GradientSchedule(self._model)
 
     def _init_pretrained_model(self, num_classes):
         model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE, box_nms_thresh=.5)
@@ -54,6 +58,7 @@ class ObjectDetector():
         model = DDP(model, find_unused_parameters=True)
 
         return model
+
         
 
     def train(self, dataset_cls):
@@ -61,16 +66,16 @@ class ObjectDetector():
         labels_dict = dataset_cls.get_labels_dict()
         summary_writer, stats_file_path = self._init_train_loggers()
         # summary_writer.add_graph(self._model, next(training_iter)[0])
-        gradient_schedule = GradientSchedule(self._model)
+        
 
         metrics = {}
-        while True:
+        while not self._gradient_schedule.is_done():
             step = self._get_current_step()
             metrics.update(self._run_train_step(training_iter, step))
 
             if step % config.EVAL_STEPS == 0:
                 metrics.update(self._run_train_eval_step(validation_iter, labels_dict, step))
-                metrics.update(gradient_schedule.update(metrics["Loss/train"]))
+                metrics.update(self._gradient_schedule.update(step))
                 self._log_metrics(summary_writer, stats_file_path, metrics, step)
                 self._checkpoint_model()
 
@@ -202,4 +207,5 @@ class ObjectDetector():
         if params:
             return list(params)[0]["step"]
         return 0
+
 
