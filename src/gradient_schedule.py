@@ -1,31 +1,38 @@
 import logging
 from collections import namedtuple
 
+import torch.distributed as dist
+import torch
+
 Phase = namedtuple("Phase", ["loss_threshold_next", "gradient_param_prefixes"])
 
 MA_ALPHA = .2
 SCHEDULE = [
-    (2.5, ["roi_heads.box_predictor"]),
-    (2.0, ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred"]),
-    (1.8, ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred", "roi_heads.box_head.fc7"]),
-    (0., ["roi_heads.box_predictor", "rpn.head.cls_logits", "rpn.head.bbox_pred", "roi_heads.box_head"]),
+    (2.5, ["module.roi_heads.box_predictor"]),
+    (1.9, ["module.roi_heads.box_predictor", "module.rpn.head.cls_logits", "module.rpn.head.bbox_pred"]),
+    (1.5, ["module.roi_heads.box_predictor", "module.rpn.head.cls_logits", "module.rpn.head.bbox_pred", "module.roi_heads.box_head.fc7"]),
+    (0., ["module.roi_heads.box_predictor", "module.rpn.head.cls_logits", "module.rpn.head.bbox_pred", "module.roi_heads.box_head"]),
 ]
 
 class GradientSchedule(object):
 
     def __init__(self, model, schedule=SCHEDULE):
-        self._ma_loss = None
         self._model = model
         self._schedule = schedule
         self._phase_idx = 0
+        self._ma_loss = None
     
         self._activate_gradients()
 
     def update(self, loss):
         if self._ma_loss is None:
-            self._ma_loss = loss*2  # We muliply to avoid a lucky first loss triggering the next phase...
+            self._ma_loss = torch.tensor(loss*2)  # We muliply to avoid a lucky first loss triggering the next phase...
         else:
             self._ma_loss = MA_ALPHA*loss + (1-MA_ALPHA)*self._ma_loss
+
+        # Syncronize
+        dist.all_reduce(self._ma_loss, op=dist.ReduceOp.SUM)
+        self._ma_loss /= dist.get_world_size()
 
         loss_threshold_next = self._schedule[self._phase_idx][0]
         if self._ma_loss < loss_threshold_next:
@@ -33,7 +40,7 @@ class GradientSchedule(object):
             self._activate_gradients()
 
         nb_params = sum(p.numel() for p in self._model.parameters() if p.requires_grad)
-        return {"Schedule/ma_loss": self._ma_loss, "Schedule/phase": self._phase_idx, "Scheduler/nb_train_params": nb_params}
+        return {"Schedule/ma_loss": self._ma_loss.item(), "Schedule/phase": self._phase_idx, "Scheduler/nb_train_params": nb_params}
 
     def _activate_gradients(self):
             logging.info("Gradient schedule activated phase %s", self._phase_idx)

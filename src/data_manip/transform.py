@@ -3,6 +3,7 @@ from itertools import cycle
 
 import numpy as np
 from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 import torch
 from torchvision import transforms as tv_transforms
 
@@ -114,15 +115,26 @@ def get_transform_collate_fn(for_training):
     return collate
 
 
+def loop_forever(loader):
+    while True:
+        data_iter = iter(loader)
+        for data in data_iter:
+            yield data
+        loader.sampler.epoch += 1  # Important for shuffling the DistributedSampler
+
+
 def get_train_val_iters(dataset_cls, batch_size):
     def get_loader(for_training):
-        return DataLoader(dataset_cls(for_training), 
+        dataset = dataset_cls(for_training)
+        dist_sampler = DistributedSampler(dataset, shuffle=for_training)
+        return DataLoader(dataset, 
                         batch_size=batch_size,  # num_workers=1 if for_training else 0
-                        shuffle=for_training, collate_fn=get_transform_collate_fn(for_training))
+                        sampler=dist_sampler, # shuffle=for_training, 
+                        collate_fn=get_transform_collate_fn(for_training))
     training_loader = get_loader(True)
     validation_loader = get_loader(False)
-    training_iter = cycle(iter(training_loader))
-    validation_iter = cycle(iter(validation_loader))
+    training_iter = loop_forever(training_loader)
+    validation_iter = loop_forever(validation_loader)
     return training_iter, validation_iter
     
 
