@@ -1,11 +1,11 @@
 
 ## DISTRIBUTED
-NB_PROCESSES = 6
+NB_PROCESSES = 1
 
 ## MODEL ##
 IMAGE_SIZE = 900
 BATCH_SIZE = 1
-EVAL_STEPS = 1
+EVAL_STEPS = 25
 CHECKPOINT_DIR = "./data/model"
 CHECKPOINT_NAME = "model.pth.tar"
 LOG_DIR = "./data/logs"

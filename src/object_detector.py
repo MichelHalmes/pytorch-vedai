@@ -27,10 +27,8 @@ from gradient_schedule import GradientSchedule
 
 class ObjectDetector():
 
-    def __init__(self, num_classes, rank, restore):
+    def __init__(self, num_classes, restore):
         self._model = self._init_pretrained_model(num_classes)
-        self._rank = rank
-        assert self._rank == dist.get_rank()
         self.init_training()
         if restore:
             file_path = path.join(config.CHECKPOINT_DIR, config.CHECKPOINT_NAME)
@@ -80,12 +78,12 @@ class ObjectDetector():
                 self._checkpoint_model()
 
 
-    def _sync_gradients(self):
-        size = float(dist.get_world_size())
-        for param in self._model.parameters():
-            if param.requires_grad:
-                dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM)
-                param.grad.data /= size
+    # def _sync_gradients(self):
+    #     size = float(dist.get_world_size())
+    #     for param in self._model.parameters():
+    #         if param.requires_grad:
+    #             dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM)
+    #             param.grad.data /= size
 
 
     def _run_train_step(self, training_iter, step):
@@ -99,7 +97,7 @@ class ObjectDetector():
 
         self._optimizer.zero_grad()
         loss.backward()
-        self._sync_gradients()
+        # self._sync_gradients()
         self._optimizer.step()
         time_back = time.time()
 
@@ -110,7 +108,7 @@ class ObjectDetector():
         return {"Loss/train": loss}
 
     def is_master(self):
-        return self._rank == 0
+        return dist.get_rank() == 0
 
     def _run_train_eval_step(self, validation_iter, labels_dict, step):
         images, targets = next(validation_iter)
