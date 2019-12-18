@@ -10,6 +10,7 @@ from torchvision import transforms as tv_transforms
 from data_manip.bbox_utils import clip_boxes
 from data_manip.augmentation import *
 from utils import Box
+import config
 
 
 
@@ -84,9 +85,10 @@ def get_transform_fn(for_training):
 
 
 def _match_batch_img_sizes(batch):
-    # Resize so that all images have the same size
-    nH = max(img.size[1] for img, _ in batch)
-    nW = max(img.size[0] for img, _ in batch)
+    # Resize so that all images have the same size -> Varying sizes create memory leak in FasterRCNN
+    # nH = max(img.size[1] for img, _ in batch)
+    # nW = max(img.size[0] for img, _ in batch)
+    nH = nW = config.IMAGE_SIZE
     new_batch = []
     for image, target in batch:
         H, W = image.size[::-1]  # PIL returns W, H
