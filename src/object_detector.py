@@ -38,7 +38,7 @@ class ObjectDetector():
 
     def init_training(self):
         # Reset the step and gradient schedule
-        self._optimizer = torch.optim.Adam(self._model.parameters(), lr=.001)
+        self._optimizer = torch.optim.Adam(self._model.parameters(), lr=.0001)
         self._gradient_schedule = GradientSchedule(self._model)
 
     def _init_pretrained_model(self, num_classes):
@@ -49,6 +49,7 @@ class ObjectDetector():
             in_channels=model.roi_heads.box_head.fc7.out_features,
             num_classes=num_classes)
         model.roi_heads.box_predictor = box_predictor
+        # TODO: modify anchor generator to reflect small scale objects
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model.to(device)
