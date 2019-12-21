@@ -1,6 +1,8 @@
 # pytorch-vedai
 
-**Work In Progress**
+| **Work In Progress** |
+| --- |
+
 
 Using pyTorch for object detection on the VEDAI dataset: [Vehicle Detection in Aerial Imagery](https://downloads.greyc.fr/vedai/).
 
@@ -14,12 +16,12 @@ Instead of training a detector from scratch is use a pretrained detector and tra
 We use the [Faster-RCNN](https://arxiv.org/abs/1506.01497) detector as it gives a good [tradeoff between speed and accuracy](https://arxiv.org/abs/1611.10012).
 The detector is pretrained on the COCO  dataset.
 We modify the pretrained model as little as possible and only reinitialize the box-predictor having 61'500 parameters for our 12 classes (1025\*12\*5).
-Once the box predictor is trained, we progressively activate the gradients for more layers. This is what the class [`GradientSchedule`](scr/gradient_schedule.py) does.
+Once the box predictor is trained, we progressively activate the gradients for more layers. This is what the class [`GradientSchedule`](src/gradient_schedule.py) does.
 
-### Data augementation
+### Data augmentation
 To make the most of the few samples we have, we use extensive data-augmentation. The challenge is to apply the same transformation to the image and the box. For this we make use of open-CV.
 
-The file [augementation.py](src/data_manip/augementation.py) defines the following transformations:
+The file [augmentation.py](src/data_manip/augmentation.py) defines the following transformations:
  
  * `RandomHSV`: Changes the brightness, contrast, saturation and hue of the image
  * `RandomAxisFlip`: Flips the image over the horizontal, vertical and diagonal axis of the image
