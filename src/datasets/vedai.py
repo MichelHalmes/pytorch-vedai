@@ -32,14 +32,14 @@ class VedaiDataset(MyDataset):
 
             boxes = []
             labels = []
-            img_width, img_height = img_size
+            W, H = img_size
             for r in reader:
                 cx, cy, w, h = float(r["cx"]), float(r["cy"]), float(r["width"]), float(r["height"])
                     
-                x_min = cx*img_width - w*img_width/2
-                y_min = cy*img_height - h*img_height/2
-                x_max = cx*img_width + w*img_width/2
-                y_max = cy*img_height + h*img_height/2
+                x_min = max(cx*W - w*W/2, 0)
+                y_min = max(cy*H - h*H/2, 0)
+                x_max = min(cx*W + w*W/2, W)
+                y_max = min(cy*H + h*H/2, H)
                 boxes.append(Box(x_min, y_min, x_max, y_max))
                 labels.append(int(r["label"]))
 

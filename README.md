@@ -14,7 +14,7 @@ To address this, we combined 3 strategies:
 ### Transfer learning
 Instead of training a detector from scratch is use a pretrained detector and train only a few layers on the data.
 We use the [Faster-RCNN](https://arxiv.org/abs/1506.01497) detector as it gives a good [tradeoff between speed and accuracy](https://arxiv.org/abs/1611.10012).
-The detector is pretrained on the COCO  dataset.
+The detector is pretrained on the COCO dataset.
 We modify the pretrained model as little as possible and only reinitialize the box-predictor having 61'500 parameters for our 12 classes (1025\*12\*5).
 Once the box predictor is trained, we progressively activate the gradients for more layers. This is what the class [`GradientSchedule`](src/gradient_schedule.py) does.
 
@@ -31,7 +31,7 @@ The file [augmentation.py](src/data_manip/augmentation.py) defines the following
  * `RandomTranslate`: Moves the image horizontally and vertically
 
 ### Data extension
-Before training the network on the VEDAI dataset, we also train it on the DOTA: Dataset for Object Detection in Aerial Images. 
+Before training the network on the VEDAI dataset, we also train it on the DOTA: [Dataset for Object Detection in Aerial Images](https://captain-whu.github.io/DOTA/dataset.html). 
 The latter contains about 1700 images. The images have scale-per-pixel comparable to VEDAI but are much larger. We therefore randomly crop sub-parts of the same size as the images in VEDAI (1012x1024) at training time, making the effective size of the dataset much larger. 
 We only train the image on classes with size comparable to those in VEDAI (eg vehicles, storage tanks, planes) and ignore larger objects (eg Bridges, basketball courts)
 
@@ -39,5 +39,5 @@ We only train the image on classes with size comparable to those in VEDAI (eg ve
 
 ## Speed considerations
 Training on my CPU is very slow. This is also because python/pyTorch can only use one core.
-To train on multiple cores, I implement synchronized SGD using pyTorch's `DistributedDataParallel`.
+To train on multiple cores, we implement synchronized SGD using pyTorch's `DistributedDataParallel`.
 

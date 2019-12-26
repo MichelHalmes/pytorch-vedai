@@ -22,6 +22,7 @@ class ToNumpyArray(object):
         targets["labels"] = np.asarray(targets["labels"])
         return img, targets
 
+# TODO: remove, should be doen before _crop_to_size() in dataset
 class ClipBoxes(object):
     """ Limits all incoming boxes to be contained in the image """
 

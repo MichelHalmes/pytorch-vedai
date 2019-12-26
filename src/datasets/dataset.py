@@ -65,7 +65,11 @@ class MyDataset(object):
         assert image.mode == "RGB", f"Bad image {image_id} with mode {image.mode}"
 
         target = self._load_target(image_id, image.size)
-        image, target = self._crop_to_size(image, target)
+        try:
+            image, target = self._crop_to_size(image, target)
+        except RecursionError:
+            logging.error(image_id)
+            raise
 
         return image, target
 
@@ -75,7 +79,7 @@ class MyDataset(object):
 
 
     @classmethod
-    def _crop_to_size(cls, image, target):
+    def _crop_to_size(cls, image, target, recurs_cnt=0):
         # Dota contains images of differnt size, but each pixel represents the same scale
         # Make sure all images are at the same scale by croping to a maximum size
         H, W = image.size[::-1]  # PIL returns W, H
@@ -94,7 +98,7 @@ class MyDataset(object):
 
         if not new_target["labels"]:
             # We removed all boxes, retry
-            return cls._crop_to_size(image, target)
+            return cls._crop_to_size(image, target, recurs_cnt+1)
         else:
             return new_image, new_target
 

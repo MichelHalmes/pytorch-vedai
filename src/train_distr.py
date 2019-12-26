@@ -31,8 +31,8 @@ def train_model(restore):
     )
 
     detector = ObjectDetector(num_classes, restore)
-    detector.train(DotaDataset)
-    detector.init_training()
+    # detector.train(DotaDataset)
+    # detector.init_training()
     detector.train(VedaiDataset)
  
  

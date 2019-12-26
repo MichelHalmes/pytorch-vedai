@@ -9,8 +9,10 @@ from PIL import Image
 
 import torch
 import torch.nn as nn
-from torchvision.models.detection import fasterrcnn_resnet50_fpn
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+# from torchvision.models.detection import fasterrcnn_resnet50_fpn
+from torchvision.models.detection.faster_rcnn import FastRCNNPredictor, fasterrcnn_resnet50_fpn
+from torchvision.models.detection.rpn import AnchorGenerator
+from torchvision.ops import MultiScaleRoIAlign
 from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 import torch.distributed as dist
@@ -38,12 +40,19 @@ class ObjectDetector():
 
     def init_training(self):
         # Reset the step and gradient schedule
-        self._optimizer = torch.optim.Adam(self._model.parameters(), lr=.0001)
+        self._optimizer = torch.optim.Adam(self._model.parameters(), lr=.00005)
         self._gradient_schedule = GradientSchedule(self._model)
 
     def _init_pretrained_model(self, num_classes):
-        model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE, box_nms_thresh=.5)
-
+        rpn_anchor_generator = AnchorGenerator(sizes=[[32], [64], [128], [256], [512]],
+                                   aspect_ratios=[.5, 1., 2., 3.])
+        box_roi_pool = MultiScaleRoIAlign(
+                featmap_names=[0, 1, 2, 3],
+                output_size=7,
+                sampling_ratio=2)
+        model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE, box_nms_thresh=.5, 
+                                        rpn_anchor_generator=rpn_anchor_generator, box_roi_pool=box_roi_pool)
+   
         torch.manual_seed(0)  # Init the same params in all processes
         box_predictor = FastRCNNPredictor(
             in_channels=model.roi_heads.box_head.fc7.out_features,
