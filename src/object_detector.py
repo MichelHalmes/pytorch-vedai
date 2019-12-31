@@ -44,10 +44,10 @@ class ObjectDetector():
         self._gradient_schedule = GradientSchedule(self._model)
 
     def _init_pretrained_model(self, num_classes):
-        rpn_anchor_generator = AnchorGenerator(sizes=[[32], [64], [128], [256], [512]],
-                                   aspect_ratios=[.5, 1., 2., 3.])
+        rpn_anchor_generator = AnchorGenerator(sizes=[[31], [63], [127], [255], [511]],
+                                   aspect_ratios=[.5, 1., 2.])
         box_roi_pool = MultiScaleRoIAlign(
-                featmap_names=[0, 1, 2, 3],
+                featmap_names=[0, 1, 2, 3],  # + "pool" -> 5 feature maps
                 output_size=7,
                 sampling_ratio=2)
         model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE, box_nms_thresh=.5, 
@@ -58,7 +58,6 @@ class ObjectDetector():
             in_channels=model.roi_heads.box_head.fc7.out_features,
             num_classes=num_classes)
         model.roi_heads.box_predictor = box_predictor
-        # TODO: modify anchor generator to reflect small scale objects
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model.to(device)
@@ -87,15 +86,6 @@ class ObjectDetector():
                 self._log_metrics(summary_writer, stats_file_path, metrics, step)
                 self._checkpoint_model()
 
-
-    # def _sync_gradients(self):
-    #     size = float(dist.get_world_size())
-    #     for param in self._model.parameters():
-    #         if param.requires_grad:
-    #             dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM)
-    #             param.grad.data /= size
-
-
     def _run_train_step(self, training_iter, step):
         time_start = time.time()
         images, targets = next(training_iter)
@@ -107,11 +97,9 @@ class ObjectDetector():
 
         self._optimizer.zero_grad()
         loss.backward()
-        # self._sync_gradients()
         self._optimizer.step()
         time_back = time.time()
 
-        # dist.barrier()
         loss = loss.item()
         logging.info("\tStep: %s \tLoss: %.2f \ttime-data: %.2f \ttime-fwd: %.2f \ttime-back: %.2f",
                         step, loss, time_data-time_start, time_fwd-time_data, time_back-time_fwd)
