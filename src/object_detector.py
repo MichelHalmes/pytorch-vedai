@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 # from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor, fasterrcnn_resnet50_fpn
-from torchvision.models.detection.rpn import AnchorGenerator
+from torchvision.models.detection.rpn import AnchorGenerator, RPNHead
 from torchvision.ops import MultiScaleRoIAlign
 from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
@@ -31,33 +31,33 @@ class ObjectDetector():
 
     def __init__(self, num_classes, restore):
         self._model = self._init_pretrained_model(num_classes)
-        self.init_training()
+        self.init_optimizer()
         if restore:
             file_path = path.join(config.CHECKPOINT_DIR, config.CHECKPOINT_NAME)
             state = torch.load(file_path)
             self._model.load_state_dict(state["model"])
             self._optimizer.load_state_dict(state["optimizer"])
 
-    def init_training(self):
+    def init_optimizer(self):
         # Reset the step and gradient schedule
         self._optimizer = torch.optim.Adam(self._model.parameters(), lr=.00005)
-        self._gradient_schedule = GradientSchedule(self._model)
 
     def _init_pretrained_model(self, num_classes):
-        rpn_anchor_generator = AnchorGenerator(sizes=[[31], [63], [127], [255], [511]],
-                                   aspect_ratios=[.5, 1., 2.])
         box_roi_pool = MultiScaleRoIAlign(
                 featmap_names=[0, 1, 2, 3],  # + "pool" -> 5 feature maps
                 output_size=7,
                 sampling_ratio=2)
         model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE, box_nms_thresh=.5, 
-                                        rpn_anchor_generator=rpn_anchor_generator, box_roi_pool=box_roi_pool)
+                                        # rpn_anchor_generator=rpn_anchor_generator, 
+                                        box_roi_pool=box_roi_pool)
    
         torch.manual_seed(0)  # Init the same params in all processes
-        box_predictor = FastRCNNPredictor(
+        model.roi_heads.box_predictor = FastRCNNPredictor(
             in_channels=model.roi_heads.box_head.fc7.out_features,
             num_classes=num_classes)
-        model.roi_heads.box_predictor = box_predictor
+        model.rpn.anchor_generator = AnchorGenerator(sizes=[[16], [32], [64], [128], [256]],
+                                                aspect_ratios=[.25, .5, 1., 2., 4.])
+        model.rpn.head = RPNHead(in_channels=256, num_anchors=5)
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model.to(device)
@@ -68,21 +68,22 @@ class ObjectDetector():
 
         
 
-    def train(self, dataset_cls):
+    def train(self, dataset_cls, schedule):
         training_iter, validation_iter = get_train_val_iters(dataset_cls, config.BATCH_SIZE)
         labels_dict = dataset_cls.get_labels_dict()
         summary_writer, stats_file_path = self._init_train_loggers()
         # summary_writer.add_graph(self._model, next(training_iter)[0])
-        
+
+        gradient_schedule = GradientSchedule(self._model, schedule)        
 
         metrics = {}
-        while not self._gradient_schedule.is_done():
+        while not gradient_schedule.is_done():
             step = self._get_current_step()
             metrics.update(self._run_train_step(training_iter, step))
 
             if step % config.EVAL_STEPS == 0:
                 metrics.update(self._run_train_eval_step(validation_iter, labels_dict, step))
-                metrics.update(self._gradient_schedule.update(step))
+                metrics.update(gradient_schedule.update(step))
                 self._log_metrics(summary_writer, stats_file_path, metrics, step)
                 self._checkpoint_model()
 
