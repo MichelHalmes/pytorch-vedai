@@ -33,8 +33,25 @@ The file [augmentation.py](src/data_manip/augmentation.py) defines the following
 ### Data extension
 Before training the network on the VEDAI dataset, we also train it on the DOTA: [Dataset for Object Detection in Aerial Images](https://captain-whu.github.io/DOTA/dataset.html). 
 The latter contains about 1700 images. The images have scale-per-pixel comparable to VEDAI but are much larger. We therefore randomly crop sub-parts of the same size as the images in VEDAI (1012x1024) at training time, making the effective size of the dataset much larger. 
-We only train the image on classes with size comparable to those in VEDAI (eg vehicles, storage tanks, planes) and ignore larger objects (eg Bridges, basketball courts)
+We only train the image on classes with size comparable to those in VEDAI (eg vehicles, storage tanks, planes) and ignore larger objects (eg Bridges, basketball courts).
 
+The graph shows the convergence of the model on VEDAI, with and without pre-training on DOTA.
+
+<img src="media/effect_pretrain.png" alt="loss_pretrain" width="500">
+
+
+## Performance
+
+Pre-training our model on DOTA and then on VEDAI, we get the performance graphs below.
+The mean-average-precision is sampled over a batch of the validation set.
+On the right axis, we show the number of parameter currently under training ie with gradient activated.
+
+<img src="media/mAP_pretrain.png" alt="mAP_pretrain" width="500">
+<img src="media/mAP_train.png" alt="mAP_train" width="500">
+
+As one can see from the loss, we do not suffer any over-fitting.
+
+<img src="media/loss_pretrain.png" alt="loss_pretrain" width="500">
 
 
 ## Speed considerations
