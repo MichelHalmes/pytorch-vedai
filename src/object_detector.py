@@ -27,7 +27,7 @@ import config
 from gradient_schedule import GradientSchedule
 
 
-class ObjectDetector():
+class ObjectDetector(object):
 
     def __init__(self, num_classes, restore):
         self._model = self._init_pretrained_model(num_classes)
@@ -204,5 +204,3 @@ class ObjectDetector():
         if params:
             return list(params)[0]["step"]
         return 0
-
-

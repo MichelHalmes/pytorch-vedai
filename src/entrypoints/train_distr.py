@@ -5,7 +5,7 @@
 
 import logging
 import sys
-import os
+from os import environ, path
 import time
 
 import click
@@ -14,6 +14,8 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from torch.multiprocessing import Process
+
+sys.path.append(path.abspath(path.join(__file__, "../../")))
 
 from datasets.vedai import VedaiDataset
 from datasets.dota import DotaDataset
@@ -31,15 +33,15 @@ def train_model(restore):
     )
 
     detector = ObjectDetector(num_classes, restore)
-    detector.train(DotaDataset, config.INIT_SCHEDULE)
-    detector.init_optimizer()
-    detector.train(VedaiDataset, config.TRAINED_SCHEDULE)
+    detector.train(VedaiDataset, config.INIT_SCHEDULE)
+    # detector.init_optimizer()
+    # detector.train(VedaiDataset, config.TRAINED_SCHEDULE)
  
  
 def init_process(rank, size, run_fn):
     """ Initialize the distributed environment. """
-    os.environ["MASTER_ADDR"] = "127.0.0.1"
-    os.environ["MASTER_PORT"] = "29500"
+    environ["MASTER_ADDR"] = "127.0.0.1"
+    environ["MASTER_PORT"] = "29500"
     dist.init_process_group(backend="gloo", rank=rank, world_size=size)
     try:
         run_fn()

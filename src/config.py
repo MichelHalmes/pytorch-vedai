@@ -14,7 +14,7 @@ LOG_DIR = "./data/logs"
 DATA_PATH = "./data/sets/{name}"
 IMAGES_PATH = "images/{id_}.jpg"
 ANNOTATIONS_PATH = "annotations/{id_}.txt"
-EVALSET_PCT = .1
+EVALSET_PCT = .01
 CROP_TO_SIZE = (1024, 1024)  # H, W
 
 ## EVAL
@@ -27,9 +27,6 @@ INIT_SCHEDULE = [
     (500, ["module.roi_heads.box_predictor", "module.rpn", "module.roi_heads.box_head.fc7"]),
     (500, ["module.roi_heads", "module.rpn"]),
     (1000, ["module.roi_heads", "module.rpn", "module.backbone.fpn"]),
-    # (500, ["module.roi_heads", "module.rpn", "module.backbone.fpn", "module.backbone.body.layer4"]),
-    # (500, ["module.roi_heads", "module.rpn", "module.backbone.fpn", "module.backbone.body.layer4", "module.backbone.body.layer3"]),
-    # (100, ["module"]),
 ]
 
 TRAINED_SCHEDULE = [
@@ -38,9 +35,9 @@ TRAINED_SCHEDULE = [
     (500, ["module.roi_heads.box_predictor", "module.rpn", "module.roi_heads.box_head.fc7"]),
     (500, ["module.roi_heads", "module.rpn"]),
     (1000, ["module.roi_heads", "module.rpn", "module.backbone.fpn"]),
-    # (500, ["module.roi_heads", "module.rpn", "module.backbone.fpn", "module.backbone.body.layer4"]),
-    # (500, ["module.roi_heads", "module.rpn", "module.backbone.fpn", "module.backbone.body.layer4", "module.backbone.body.layer3"]),
-    # (100, ["module"]),
+    (500, ["module.roi_heads", "module.rpn", "module.backbone.fpn", "module.backbone.body.layer4"]),
+    (500, ["module.roi_heads", "module.rpn", "module.backbone.fpn", "module.backbone.body.layer4", "module.backbone.body.layer3"]),
+    (500, ["module"]),
 ]
 
 
