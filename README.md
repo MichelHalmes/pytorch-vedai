@@ -17,9 +17,10 @@ We use the [Faster-RCNN](https://arxiv.org/abs/1506.01497) detector as it gives 
 The detector is pretrained on the COCO dataset.
 We modify the pre-trained model as little as possible and only reinitialize the two heads of the network
  * *the box predictor*: This is to reflect that our dataset only has 12 classes, requiring fewer parameters than the model trained on COCO.
- * *the head of the RPN*: We modify the anchor generator to focus on boxes that are half the size of the original (ie 16-256 pixels) and include wider aspect rations of 1:4 and 4:1
-The box predictor must be ininitialized to
-Once the initialized heads are trained, we progressively activate the gradients for more layers. This is what the class [`GradientSchedule`](src/gradient_schedule.py) does.
+ * *the head of the RPN*: We modify the anchor generator to focus on boxes that are half the size of the original (ie 16-256 pixels) and include wider aspect rations of 1:4 and 4:1. Empirically, this gave the best results.
+
+
+Once the re-initialized heads are trained, we progressively activate the gradients for more layers. This is what the class [`GradientSchedule`](src/gradient_schedule.py) does.
 
 ### Data augmentation
 To make the most of the few samples we have, we use extensive data-augmentation. The challenge is to apply the same transformation to the image and the box. For this we make use of open-CV.
@@ -49,8 +50,8 @@ Pre-training our model on DOTA and then on VEDAI, we get the performance graphs 
 The mean-average-precision is sampled over a batch of the validation set.
 On the right axis, we show the number of parameter currently under training ie with gradient activated.
 
-<img src="media/mAP_pretrain.png" alt="mAP_pretrain" width="400">
-<img src="media/mAP_train.png" alt="mAP_train" width="400">
+<img src="media/mAP_pretrain.png" alt="mAP_pretrain" width="350">
+<img src="media/mAP_train.png" alt="mAP_train" width="350">
 
 As one can see from the loss, we do not suffer any over-fitting.
 
