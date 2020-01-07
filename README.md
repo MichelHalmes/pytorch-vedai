@@ -37,10 +37,12 @@ The file [augmentation.py](src/data_manip/augmentation.py) defines the following
 We observe that without augmentation, validation-loss is about twice (0.17 vs 0.10) the training-loss after only 3000 training steps.
 The pictures below, show 4 distinct variations of the same image.
 
+<p float="center">
 <img src="media/augmentation_0.png" alt="augmentation_0" width="150">
 <img src="media/augmentation_1.png" alt="augmentation_1" width="150">
 <img src="media/augmentation_2.png" alt="augmentation_2" width="150">
 <img src="media/augmentation_3.png" alt="augmentation_3" width="150">
+</p>
 
 
 ### Data extension
@@ -59,8 +61,10 @@ Pre-training our model on DOTA and then on VEDAI, we get the performance graphs 
 The mean-average-precision is sampled over a batch of the validation set.
 On the right axis, we show the number of parameter currently under training ie with gradient activated.
 
+<p float="center">
 <img src="media/mAP_pretrain.png" alt="mAP_pretrain" width="350">
 <img src="media/mAP_train.png" alt="mAP_train" width="350">
+</p>
 
 As one can see from the loss, we do not suffer any over-fitting.
 
