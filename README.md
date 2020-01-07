@@ -34,6 +34,15 @@ The file [augmentation.py](src/data_manip/augmentation.py) defines the following
  * `RandomScale`: Zooms in or out of the image
  * `RandomTranslate`: Moves the image horizontally and vertically
 
+We observe that without augmentation, validation-loss is about twice (0.17 vs 0.10) the training-loss after only 3000 training steps.
+The pictures below, show 4 distinct variations of the same image.
+
+<img src="media/augmentation_0.png" alt="augmentation_0" width="150">
+<img src="media/augmentation_1.png" alt="augmentation_1" width="150">
+<img src="media/augmentation_2.png" alt="augmentation_2" width="150">
+<img src="media/augmentation_3.png" alt="augmentation_3" width="150">
+
+
 ### Data extension
 Before training the network on the VEDAI dataset, we also train it on the DOTA: [Dataset for Object Detection in Aerial Images](https://captain-whu.github.io/DOTA/dataset.html). 
 The latter contains about 1700 images. The images have scale-per-pixel comparable to VEDAI but are much larger. We therefore randomly crop sub-parts of the same size as the images in VEDAI (1012x1024) at training time, making the effective size of the dataset much larger. 

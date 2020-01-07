@@ -22,14 +22,20 @@ def _plot_bounding_boxes(locations, ax, is_ground_truth):
 
 def plot_detections(image, ground_truths, detections):
     fig, ax = plt.subplots(1, frameon=False)
-    ax.set_position([0., 0., 1., 1.])
     ax.set_axis_off()
+    ax.set_position([0., 0., 1., 1.])
 
     image = image.permute(1, 2, 0).numpy()
-    plt.imshow(image)
+    ax.imshow(image)
 
     _plot_bounding_boxes(ground_truths, ax, is_ground_truth=True)
     _plot_bounding_boxes(detections, ax, is_ground_truth=False)
+
+    return fig
+
+
+def plot_and_save(image, ground_truths, detections):
+    fig = plot_detections(image, ground_truths, detections)
 
     fig_path = path.join(config.LOG_DIR, "detections.png")
     fig.savefig(fig_path)

@@ -20,7 +20,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 from evaluate.mean_average_precision import get_mean_average_precision
 from evaluate.intersection_over_union import non_maximum_suppression
-from evaluate.plot_detections import plot_detections
+from evaluate.plot_detections import plot_and_save
 from utils import Box, Location, evaluating, format_object_locations
 from data_manip.transform import get_train_val_iters
 import config
@@ -117,7 +117,7 @@ class ObjectDetector(object):
 
         ground_truths, detections = self.get_ground_truths_and_detections(images, targets, labels_dict)
         mAP = get_mean_average_precision(ground_truths, detections)
-        figure = plot_detections(images[0], ground_truths[0], detections[0]) if self.is_master() else None
+        figure = plot_and_save(images[0], ground_truths[0], detections[0]) if self.is_master() else None
 
         return {"Loss/val": loss, "mAP/val": mAP, "Image/detections/val": figure}
 
