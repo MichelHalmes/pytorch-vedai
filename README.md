@@ -34,14 +34,14 @@ The file [augmentation.py](src/data_manip/augmentation.py) defines the following
  * `RandomScale`: Zooms in or out of the image
  * `RandomTranslate`: Moves the image horizontally and vertically
 
-We observe that without augmentation, validation-loss is about twice (0.17 vs 0.10) the training-loss after only 3000 training steps.
+We observe that without augmentation, validation-loss is about twice (0.17 vs 0.10) the training-loss after only 3000 training steps. The data-augmentation is therefore sufficient to avoid over-fitting despite the small dataset.
 The pictures below, show 4 distinct variations of the same image.
 
 <p float="center">
-<img src="media/augmentation_0.png" alt="augmentation_0" width="150">
-<img src="media/augmentation_1.png" alt="augmentation_1" width="150">
-<img src="media/augmentation_2.png" alt="augmentation_2" width="150">
-<img src="media/augmentation_3.png" alt="augmentation_3" width="150">
+<img src="media/augmentation_0.png" alt="augmentation_0" width="200">
+<img src="media/augmentation_1.png" alt="augmentation_1" width="200">
+<img src="media/augmentation_2.png" alt="augmentation_2" width="200">
+<img src="media/augmentation_3.png" alt="augmentation_3" width="200">
 </p>
 
 
@@ -54,24 +54,57 @@ The graph shows the convergence of the model on VEDAI, with and without pre-trai
 
 <img src="media/effect_pretrain.png" alt="loss_pretrain" width="400">
 
+## Other remarks
 
-## Performance
+#### Learning rate
+Since we have very few data samples and have a pre-trained model, we want to make adjustment very slowly. Therefore, and also because of the small batch size, we use an unusually low learning rate of `5e-5`.
+
+#### Bounding-Boxes in VEDAI
+The bounding boxes in VEDAI (and by selection, DOTA as well) are very small and some have extreme aspect rations.
+Our model is pre-traiend and designed on COCO for which this is less the case.
+To adapt to this particularity, we adjust the Anchor generator of our model to propose boxes that are half as small and also boxes with aspect ratios `4:1` and `1:4` (as already mentioned above). We determined these setting empirically.
+
+#### Non-maximum suppression
+Its is difficult (for the model) to distinguish between the classes and the model frequently predicts a car and en a pickup truck in roughly the same location.
+To counteract this, we add non-maximum suppression with IOU threshold 90%. The Faster-RCNN already has NMS but applied it on a per class level. Ours is applied irrespectively of the class.
+
+
+## Speed considerations
+
+Training on my CPU is very slow. This is also because python/pyTorch can only use one core.
+To train on multiple cores, we implement synchronized SGD using pyTorch's `DistributedDataParallel`.
+We use batch size 1 on 6 processes resulting in a 3x acceleration (there is a bottleneck due to gradient synchronization between processes at every step).
+
+
+## Detection performance
+
+The pictures below show a few detections on validation images.
+
+<img src="media/detections_1.png" alt="detections_1" width="500">
+<img src="media/detections_2.png" alt="detections_2" width="500">
+<img src="media/detections_3.png" alt="detections_3" width="500">
+
 
 Pre-training our model on DOTA and then on VEDAI, we get the performance graphs below.
-The mean-average-precision is sampled over a batch of the validation set.
-On the right axis, we show the number of parameter currently under training ie with gradient activated.
-
-<p float="center">
-<img src="media/mAP_pretrain.png" alt="mAP_pretrain" width="350">
-<img src="media/mAP_train.png" alt="mAP_train" width="350">
-</p>
 
 As one can see from the loss, we do not suffer any over-fitting.
 
 <img src="media/loss_pretrain.png" alt="loss_pretrain" width="400">
 
 
-## Speed considerations
-Training on my CPU is very slow. This is also because python/pyTorch can only use one core.
-To train on multiple cores, we implement synchronized SGD using pyTorch's `DistributedDataParallel`.
+For evaluation, we use the definition of the mean-average-precision from the VOC Pascal challenge (interpolated version).
+For speed reasons, the mAP is sampled every 25 training steps over one batch of the validation set. This means that we compute mAP on a per image basis and the average over images. 
+
+The graph below shows the evolution of the mAP calculated as such during training. The final value of the mAP is 55.9%.
+
+<p float="center">
+<img src="media/mAP_pretrain.png" alt="mAP_pretrain" width="400">
+<img src="media/mAP_train.png" alt="mAP_train" width="400">
+</p>
+
+On the right axis, we show the number of parameter currently under training ie with gradients activated.
+
+Yet, mAP should correctly be computed over the whole validation set. This is what the script [run_eval.py](src/entrypoints/run_eval.py) does. Our actual mAP is closer to 31.5%. We believe that this result could be improved further without my hardware limitations ie no GPU available. In fact, we believe that raining longer on both DOTA and VEDAI, on the full image size (1024 instead of 900) (and potentially reducing the size of the validation set on DOTA) would further improve detection performance.
+
+
 

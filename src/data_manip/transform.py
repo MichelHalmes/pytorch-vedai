@@ -64,7 +64,7 @@ def get_transform_fn(for_training):
         ClipBoxes(),
     ]
 
-    if for_training or True: # TODO
+    if for_training:
         transforms.extend([
             RandomHSV(),
             Normalize(forward=True),

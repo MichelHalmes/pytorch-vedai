@@ -14,11 +14,11 @@ LOG_DIR = "./data/logs"
 DATA_PATH = "./data/sets/{name}"
 IMAGES_PATH = "images/{id_}.jpg"
 ANNOTATIONS_PATH = "annotations/{id_}.txt"
-EVALSET_PCT = .01
+EVALSET_PCT = .1
 CROP_TO_SIZE = (1024, 1024)  # H, W
 
 ## EVAL
-PLOT_DETECTIONS_MIN_SCORE=.01
+PLOT_DETECTIONS_MIN_SCORE=.07
 
 
 ## GRADIENT SCHEDULES

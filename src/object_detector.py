@@ -130,6 +130,8 @@ class ObjectDetector(object):
                         for batch_id, target_dict in enumerate(targets)]
         detections = [format_object_locations(detection_dict, labels_dict, batch_id) \
                         for batch_id, detection_dict in enumerate(predictions)]
+        detections = [non_maximum_suppression(batch_detection, threshold=.9) \
+                        for batch_detection in detections]
         return ground_truths, detections
 
 

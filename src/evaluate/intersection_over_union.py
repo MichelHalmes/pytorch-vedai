@@ -41,11 +41,11 @@ def _get_area(box):
     return (box.x_max - box.x_min + 1) * (box.y_max - box.y_min + 1)
 
 
-def non_maximum_suppression(detections, threshold=.3):
+def non_maximum_suppression(detections, threshold=.5):
     if not detections:
         return []
     detections = sorted(detections, key=lambda det: det.score, reverse=True)
-    new_detections=[detections[0]]
+    new_detections = [detections[0]]
     
     for detection in detections:
         for new_detection in new_detections:

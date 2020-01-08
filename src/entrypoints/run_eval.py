@@ -15,20 +15,25 @@ from evaluate.mean_average_precision import get_mean_average_precision
 
 def main():
     dataset = VedaiDataset(for_training=False)
-    loader = DataLoader(dataset, batch_size=4, collate_fn=get_transform_collate_fn(for_training=False))
+    loader = DataLoader(dataset, batch_size=1, collate_fn=get_transform_collate_fn(for_training=False))
     num_classes = len(VedaiDataset.get_labels_dict())
     detector = ObjectDetector(num_classes, restore=True)
     labels_dict = dataset.get_labels_dict()
 
     all_ground_truths, all_detections = [], []
+    mAPs = []
     for images, targets in loader:
         ground_truths, detections = detector.get_ground_truths_and_detections(images, targets, labels_dict)
+        mAP = get_mean_average_precision(ground_truths, detections)
+        mAPs.append(mAP)
         all_ground_truths.extend(ground_truths)
         all_detections.extend(detections)
     
-    mAP = get_mean_average_precision(all_ground_truths, all_detections)
-  
+    mAP = get_mean_average_precision(all_ground_truths, all_detections)  
     logging.info("mAP for validation set: %.2f%%", mAP*100.)
+    mAP = sum(mAPs)/len(mAPs)
+    logging.info("Individual mAP for validation set: %.2f%%", mAP*100.)
+
 
 
 if __name__ == "__main__":

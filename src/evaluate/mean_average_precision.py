@@ -26,7 +26,6 @@ def get_pascal_voc_metrics(ground_truths,
                         detections,
                         IOUThreshold=0.5):
     """Get the metrics used by the VOC Pascal 2012 challenge.
-    Get
     Args:
         ground_truths: List with all ground truths [(imageName,class,confidence=1, (bb coordinates XYX2Y2))]
         detections: List with all detections [(imageName,class,confidence,(bb coordinates XYX2Y2))])
