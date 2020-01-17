@@ -34,7 +34,7 @@ The file [augmentation.py](src/data_manip/augmentation.py) defines the following
  * `RandomScale`: Zooms in or out of the image
  * `RandomTranslate`: Moves the image horizontally and vertically
 
-We observe that without augmentation, validation-loss is about twice (0.17 vs 0.10) the training-loss after only 3000 training steps. The data-augmentation is therefore sufficient to avoid over-fitting despite the small dataset.
+We observe that without augmentation, validation-loss is about twice (0.17 vs 0.10) the training-loss after only 3000 training steps. The data-augmentation is therefore helpful in avoiding over-fitting despite the small dataset.
 The pictures below, show 4 distinct variations of the same image.
 
 <p float="center">

@@ -37,19 +37,20 @@ class ObjectDetector(object):
             state = torch.load(file_path)
             self._model.load_state_dict(state["model"])
             self._optimizer.load_state_dict(state["optimizer"])
+            
 
     def init_optimizer(self):
         # Reset the step and gradient schedule
         self._optimizer = torch.optim.Adam(self._model.parameters(), lr=.00005)
+
 
     def _init_pretrained_model(self, num_classes):
         box_roi_pool = MultiScaleRoIAlign(
                 featmap_names=[0, 1, 2, 3],  # + "pool" -> 5 feature maps
                 output_size=7,
                 sampling_ratio=2)
-        model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE, box_nms_thresh=.5, 
-                                        # rpn_anchor_generator=rpn_anchor_generator, 
-                                        box_roi_pool=box_roi_pool)
+        model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE, 
+                                        box_nms_thresh=.5, box_roi_pool=box_roi_pool)
    
         torch.manual_seed(0)  # Init the same params in all processes
         model.roi_heads.box_predictor = FastRCNNPredictor(
@@ -66,7 +67,6 @@ class ObjectDetector(object):
 
         return model
 
-        
 
     def train(self, dataset_cls, schedule):
         training_iter, validation_iter = get_train_val_iters(dataset_cls, config.BATCH_SIZE)
@@ -74,7 +74,8 @@ class ObjectDetector(object):
         summary_writer, stats_file_path = self._init_train_loggers()
         # summary_writer.add_graph(self._model, next(training_iter)[0])
 
-        gradient_schedule = GradientSchedule(self._model, schedule)        
+        gradient_schedule = GradientSchedule(self._model, self._optimizer, schedule)
+            
 
         metrics = {}
         while not gradient_schedule.is_done():
