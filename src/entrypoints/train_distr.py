@@ -36,12 +36,12 @@ def train_model(restore):
     detector.train(DotaDataset, config.INIT_SCHEDULE)
     detector.init_optimizer()
     detector.train(VedaiDataset, config.TRAINED_SCHEDULE)
- 
- 
+
+
 def init_process(rank, size, run_fn):
     """ Initialize the distributed environment. """
     environ["MASTER_ADDR"] = "127.0.0.1"
-    environ["MASTER_PORT"] = "29500"
+    environ["MASTER_PORT"] = "29501"
     dist.init_process_group(backend="gloo", rank=rank, world_size=size)
     try:
         run_fn()
@@ -62,9 +62,9 @@ def run_distributed():
 
     while all(p.is_alive() for p in processes):
         time.sleep(5)
-    
+
     for p in processes:
-        p.kill() 
+        p.kill()
         p.join()
     logging.info("Main process exit")
 
@@ -76,5 +76,3 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(processName)s %(message)s")
 
     run_distributed()
-
-

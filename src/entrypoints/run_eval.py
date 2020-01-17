@@ -28,12 +28,11 @@ def main():
         mAPs.append(mAP)
         all_ground_truths.extend(ground_truths)
         all_detections.extend(detections)
-    
-    mAP = get_mean_average_precision(all_ground_truths, all_detections)  
-    logging.info("mAP for validation set: %.2f%%", mAP*100.)
-    mAP = sum(mAPs)/len(mAPs)
-    logging.info("Individual mAP for validation set: %.2f%%", mAP*100.)
 
+    mAP = get_mean_average_precision(all_ground_truths, all_detections)
+    logging.info("mAP for validation set: %.2f%%", mAP*100.)
+    mAP = sum(mAPs) / len(mAPs)
+    logging.info("Individual mAP for validation set: %.2f%%", mAP*100.)
 
 
 if __name__ == "__main__":

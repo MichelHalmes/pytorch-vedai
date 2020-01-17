@@ -11,10 +11,10 @@ def _plot_bounding_boxes(locations, ax, is_ground_truth):
     for _, label, score, box in locations:
         if score < config.PLOT_DETECTIONS_MIN_SCORE:
             continue
-            
+
         x_min, y_min, x_max, y_max = box
-        rect = patches.Rectangle((x_min, y_min), x_max-x_min, y_max-y_min, 
-                                linewidth=1, edgecolor=color,facecolor='none')
+        rect = patches.Rectangle((x_min, y_min), x_max-x_min, y_max-y_min,
+                                linewidth=1, edgecolor=color, facecolor='none')
         ax.add_patch(rect)
         text = label if is_ground_truth else f"{label} ({int(score*100)}%)"
         ax.text(x_min, y_min, text, color=color)
@@ -41,5 +41,3 @@ def plot_and_save(image, ground_truths, detections):
     fig.savefig(fig_path)
 
     return fig
-   
-

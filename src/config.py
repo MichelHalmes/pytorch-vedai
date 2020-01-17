@@ -1,5 +1,5 @@
 
-## DISTRIBUTED
+## DISTRIBUTED ##
 NB_PROCESSES = 6
 
 ## MODEL ##
@@ -17,11 +17,11 @@ ANNOTATIONS_PATH = "annotations/{id_}.txt"
 EVALSET_PCT = .1
 CROP_TO_SIZE = (1024, 1024)  # H, W
 
-## EVAL
+## EVAL ##
 PLOT_DETECTIONS_MIN_SCORE=.07
 
 
-## GRADIENT SCHEDULES
+## GRADIENT SCHEDULES ##
 INIT_SCHEDULE = [
     (1000, ["module.roi_heads.box_predictor", "module.rpn"]),
     (500, ["module.roi_heads.box_predictor", "module.rpn", "module.roi_heads.box_head.fc7"]),
@@ -42,4 +42,3 @@ TRAINED_SCHEDULE = [
     (1000, ["module.roi_heads", "module.rpn", "module.backbone.fpn", "module.backbone.body.layer4", "module.backbone.body.layer3"]),
     (1000, ["module.roi_heads", "module.rpn", "module.backbone.fpn", "module.backbone.body.layer4", "module.backbone.body.layer3", "module.backbone.body.layer2"]),
 ]
-

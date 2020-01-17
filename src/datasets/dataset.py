@@ -12,18 +12,14 @@ class MyDataset(object):
     _NAME = None
     _LABELS_DICT = None
 
-
     def __init__(self, for_training):
         self._image_ids = self._load_image_ids(for_training)
-
 
     def _load_target(self, image_id, img_size=None):
         raise NotImplementedError()
 
-
     def _annotation_path(self, image_id):
         return path.join(config.DATA_PATH.format(name=self._NAME), config.ANNOTATIONS_PATH.format(id_=image_id))
-
 
     def _load_and_filter_image_ids(self):
         images_dir = path.dirname(path.join(config.DATA_PATH.format(name=self._NAME), config.IMAGES_PATH))
@@ -33,13 +29,12 @@ class MyDataset(object):
                 continue
             image_id = filename.split(".", 2)[0]
             annotation_path = self._annotation_path(image_id)
-            if not path.exists(annotation_path) or not self._load_target(image_id, (10, 10))["labels"]: # Filter out images with only None labels or no boxes
+            if not path.exists(annotation_path) or not self._load_target(image_id, (10, 10))["labels"]:  # Filter out images with only None labels or no boxes
                 file_path = path.join(images_dir, filename)
                 rename(file_path, file_path+".out")
             else:
                 image_ids.append(image_id)
         return image_ids
-
 
     def _load_image_ids(self, for_training):
         image_ids = self._load_and_filter_image_ids()
@@ -52,11 +47,10 @@ class MyDataset(object):
         else:
             image_ids = image_ids[:split_idx]
 
-        logging.info("Found %s images in %s-dataset", 
+        logging.info("Found %s images in %s-dataset",
             len(image_ids), "train" if for_training else "eval")
-        
-        return image_ids
 
+        return image_ids
 
     def __getitem__(self, i):
         image_id = self._image_ids[i]
@@ -73,10 +67,8 @@ class MyDataset(object):
 
         return image, target
 
-
     def __len__(self):
         return len(self._image_ids)
-
 
     @classmethod
     def _crop_to_size(cls, image, target, recurs_cnt=0):
@@ -102,9 +94,6 @@ class MyDataset(object):
         else:
             return new_image, new_target
 
-
     @classmethod
     def get_labels_dict(cls):
         return cls._LABELS_DICT
-
-

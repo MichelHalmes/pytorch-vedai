@@ -1,4 +1,4 @@
-import logging 
+import logging
 import time
 from os import path, makedirs
 from copy import deepcopy
@@ -37,21 +37,19 @@ class ObjectDetector(object):
             state = torch.load(file_path)
             self._model.load_state_dict(state["model"])
             self._optimizer.load_state_dict(state["optimizer"])
-            
 
     def init_optimizer(self):
         # Reset the step and gradient schedule
         self._optimizer = torch.optim.Adam(self._model.parameters(), lr=.00005)
 
-
     def _init_pretrained_model(self, num_classes):
         box_roi_pool = MultiScaleRoIAlign(
-                featmap_names=[0, 1, 2, 3],  # + "pool" -> 5 feature maps
-                output_size=7,
-                sampling_ratio=2)
-        model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE, 
+                        featmap_names=[0, 1, 2, 3],  # + "pool" -> 5 feature maps
+                        output_size=7,
+                        sampling_ratio=2)
+        model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE,
                                         box_nms_thresh=.5, box_roi_pool=box_roi_pool)
-   
+
         torch.manual_seed(0)  # Init the same params in all processes
         model.roi_heads.box_predictor = FastRCNNPredictor(
             in_channels=model.roi_heads.box_head.fc7.out_features,
@@ -67,15 +65,12 @@ class ObjectDetector(object):
 
         return model
 
-
     def train(self, dataset_cls, schedule):
         training_iter, validation_iter = get_train_val_iters(dataset_cls, config.BATCH_SIZE)
         labels_dict = dataset_cls.get_labels_dict()
         summary_writer, stats_file_path = self._init_train_loggers()
         # summary_writer.add_graph(self._model, next(training_iter)[0])
-
         gradient_schedule = GradientSchedule(self._model, self._optimizer, schedule)
-            
 
         metrics = {}
         while not gradient_schedule.is_done():
@@ -95,7 +90,7 @@ class ObjectDetector(object):
 
         losses = self._run_model(images, targets)
         loss = sum(losses.values())  # TODO: add weighting
-        time_fwd = time.time() 
+        time_fwd = time.time()
 
         self._optimizer.zero_grad()
         loss.backward()
@@ -112,7 +107,7 @@ class ObjectDetector(object):
 
     def _run_train_eval_step(self, validation_iter, labels_dict, step):
         images, targets = next(validation_iter)
-        
+
         losses = self._run_model(images, targets)
         loss = sum(losses.values()).item()  # TODO: add weighting
 
@@ -122,19 +117,17 @@ class ObjectDetector(object):
 
         return {"Loss/val": loss, "mAP/val": mAP, "Image/detections/val": figure}
 
-
-    def get_ground_truths_and_detections(self, images, targets, labels_dict):   
+    def get_ground_truths_and_detections(self, images, targets, labels_dict):
         with evaluating(self._model):
             predictions = self._run_model(images)
 
-        ground_truths = [format_object_locations(target_dict, labels_dict, batch_id) \
+        ground_truths = [format_object_locations(target_dict, labels_dict, batch_id)
                         for batch_id, target_dict in enumerate(targets)]
-        detections = [format_object_locations(detection_dict, labels_dict, batch_id) \
+        detections = [format_object_locations(detection_dict, labels_dict, batch_id)
                         for batch_id, detection_dict in enumerate(predictions)]
-        detections = [non_maximum_suppression(batch_detection, threshold=.9) \
+        detections = [non_maximum_suppression(batch_detection, threshold=.9)
                         for batch_detection in detections]
         return ground_truths, detections
-
 
     def _checkpoint_model(self):
         if not self.is_master():
@@ -147,7 +140,6 @@ class ObjectDetector(object):
         file_path = path.join(config.CHECKPOINT_DIR, config.CHECKPOINT_NAME)
         torch.save(state, file_path)
 
-
     def _init_train_loggers(self):
         if not self.is_master():
             return None, None
@@ -158,7 +150,6 @@ class ObjectDetector(object):
         if not path.isdir(path.dirname(stats_file_path)):
             makedirs(path.dirname(stats_file_path))
         return summary_writer, stats_file_path
-
 
     def _log_metrics(self, summary_writer, stats_file_path, metrics, step):
         logging.info("\tStep: %s \ttrain-loss: %.2f \teval-loss: %.2f \tmAP: %.4f",
@@ -184,7 +175,7 @@ class ObjectDetector(object):
         if not path.isfile(stats_file_path):
             with open(stats_file_path, "w") as fp:
                 fp.write(";\t".join(headers) + "\n")
-        
+
         with open(stats_file_path, "a") as fp:
             fp.write(";\t".join(str(metrics[t]) for t in headers) + "\n")
 
@@ -196,11 +187,9 @@ class ObjectDetector(object):
             else:
                 summary_writer.add_scalar(tag, value, step)
 
-
     def _run_model(self, inputs, targets=None):
         """ Transform the _model function into a pure function """
         return self._model(inputs, deepcopy(targets))
-
 
     def _get_current_step(self):
         params = self._optimizer.state.values()

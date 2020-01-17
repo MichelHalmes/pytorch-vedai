@@ -22,6 +22,7 @@ def _boxes_intersect(boxA, boxB):
         return False  # boxA is below boxB
     return True
 
+
 def _get_intersection_area(boxA, boxB):
     xA = max(boxA.x_min, boxB.x_min)
     yA = max(boxA.y_min, boxB.y_min)
@@ -30,12 +31,14 @@ def _get_intersection_area(boxA, boxB):
     # intersection area
     return (xB - xA + 1) * (yB - yA + 1)
 
+
 def _get_union_areas(boxA, boxB, inter_area=None):
     area_A = _get_area(boxA)
     area_B = _get_area(boxB)
     if inter_area is None:
         inter_area = _get_intersection_area(boxA, boxB)
     return float(area_A + area_B - inter_area)
+
 
 def _get_area(box):
     return (box.x_max - box.x_min + 1) * (box.y_max - box.y_min + 1)
@@ -46,7 +49,7 @@ def non_maximum_suppression(detections, threshold=.5):
         return []
     detections = sorted(detections, key=lambda det: det.score, reverse=True)
     new_detections = [detections[0]]
-    
+
     for detection in detections:
         for new_detection in new_detections:
             if get_iou(detection.box, new_detection.box) > threshold:

@@ -41,7 +41,7 @@ class DotaDataset(MyDataset):
                 if label_id is None:
                     continue
                 x1, y1, x2, y2, x3, y3, x4, y4 = [float(r[k]) for k in ("x1","y1","x2","y2","x3","y3","x4","y4")]
-                    
+
                 x_min = min(x1, x2, x3, x4)
                 y_min = min(y1, y2, y3, y4)
                 x_max = max(x1, x2, x3, x4)
@@ -73,7 +73,5 @@ if __name__ == "__main__":
     images = np.stack(images)  # (N, C, H, W)
 
     mean = images.mean(axis=(0,2,3))
-    logging.info("Pixel mean: %s", images.mean(axis=(0,2,3)))
-    logging.info("Pixel std: %s", images.std(axis=(0,2,3)))
-    
-
+    logging.info("Pixel mean: %s", images.mean(axis=(0, 2, 3)))
+    logging.info("Pixel std: %s", images.std(axis=(0, 2, 3)))

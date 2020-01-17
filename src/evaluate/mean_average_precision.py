@@ -1,4 +1,4 @@
-import sys 
+import sys
 from collections import Counter
 
 import numpy as np
@@ -105,23 +105,16 @@ def get_pascal_voc_metrics(ground_truths,
     return metrics
 
 
-
-
 def get_mean_average_precision(ground_truths, detections):
-    ground_truths_merged = [gt for batch_gt in ground_truths for gt in batch_gt ]
-    detections_merged = [det for batch_det in detections for det in batch_det ]
+    ground_truths_merged = [gt for batch_gt in ground_truths for gt in batch_gt]
+    detections_merged = [det for batch_det in detections for det in batch_det]
     metrics = get_pascal_voc_metrics(ground_truths_merged, detections_merged)
 
     sum_ap = 0
     valid_classes_cnt = 0
     for class_metrics_dict in metrics:
-        cl = class_metrics_dict["class"]
         ap = class_metrics_dict["AP"]
-        precision = class_metrics_dict["precision"]
-        recall = class_metrics_dict["recall"]
         total_positives = class_metrics_dict["total positives"]
-        total_TP = class_metrics_dict["total TP"]
-        total_FP = class_metrics_dict["total FP"]
 
         if total_positives > 0:
             valid_classes_cnt = valid_classes_cnt + 1

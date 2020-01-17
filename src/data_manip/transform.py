@@ -13,14 +13,14 @@ from utils import Box
 import config
 
 
-
 class ToNumpyArray(object):
-    
+
     def __call__(self, img, targets):
         img = np.array(img)
         targets["boxes"] = np.asarray(targets["boxes"])
         targets["labels"] = np.asarray(targets["labels"])
         return img, targets
+
 
 # TODO: remove, should be doen before _crop_to_size() in dataset
 class ClipBoxes(object):
@@ -31,14 +31,15 @@ class ClipBoxes(object):
         targets = clip_boxes(targets, Box(0,0,W,H))
         return img, targets
 
+
 class ToPytorchTensor(object):
     def __init__(self):
         self._img_transform = tv_transforms.ToTensor()
-    
+
     def __call__(self, img, targets):
         targets = {
-            "boxes": torch.FloatTensor(targets["boxes"]), # (n_objects, 4)
-            "labels": torch.LongTensor(targets["labels"]) # (n_objects)
+            "boxes": torch.FloatTensor(targets["boxes"]),  # (n_objects, 4)
+            "labels": torch.LongTensor(targets["labels"])  # (n_objects)
         }
         img = self._img_transform(img)
         return img, targets
@@ -102,6 +103,7 @@ def _match_batch_img_sizes(batch):
 
 def get_transform_collate_fn(for_training):
     transform = get_transform_fn(for_training)
+
     def collate(batch):
         batch = _match_batch_img_sizes(batch)
         images = []
@@ -130,14 +132,12 @@ def get_train_val_iters(dataset_cls, batch_size):
     def get_loader(for_training):
         dataset = dataset_cls(for_training)
         dist_sampler = DistributedSampler(dataset, shuffle=for_training)
-        return DataLoader(dataset, 
+        return DataLoader(dataset,
                         batch_size=batch_size,  # num_workers=1 if for_training else 0
-                        sampler=dist_sampler, # shuffle=for_training, 
+                        sampler=dist_sampler,  # shuffle=for_training,
                         collate_fn=get_transform_collate_fn(for_training))
     training_loader = get_loader(True)
     validation_loader = get_loader(False)
     training_iter = loop_forever(training_loader)
     validation_iter = loop_forever(validation_loader)
     return training_iter, validation_iter
-    
-

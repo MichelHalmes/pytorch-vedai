@@ -35,7 +35,7 @@ class VedaiDataset(MyDataset):
             W, H = img_size
             for r in reader:
                 cx, cy, w, h = float(r["cx"]), float(r["cy"]), float(r["width"]), float(r["height"])
-                    
+
                 x_min = max(cx*W - w*W/2, 0)
                 y_min = max(cy*H - h*H/2, 0)
                 x_max = min(cx*W + w*W/2, W)
@@ -67,20 +67,5 @@ if __name__ == "__main__":
     images = np.stack(images)  # (N, C, H, W)
 
     mean = images.mean(axis=(0,2,3))
-    logging.info("Pixel mean: %s", images.mean(axis=(0,2,3)))
-    logging.info("Pixel std: %s", images.std(axis=(0,2,3)))
-    
-
-
-        
-
-
-
-
-        
-
-
-
-        
-
-
+    logging.info("Pixel mean: %s", images.mean(axis=(0, 2, 3)))
+    logging.info("Pixel std: %s", images.std(axis=(0, 2, 3)))

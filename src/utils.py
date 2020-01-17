@@ -26,7 +26,7 @@ def format_object_locations(locations_dict, labels_dict, img_id="none"):
         returns: [(image_id, label_name, score, ((x_min, y_min, x_max, y_max)))]
     """
     locations = []
-    if not "scores" in locations_dict:
+    if "scores" not in locations_dict:
         locations_dict["scores"] = torch.ones(locations_dict["labels"].size(), dtype=torch.float64)
     for box, label, score in zip(locations_dict["boxes"], locations_dict["labels"], locations_dict["scores"]):
         locations.append(Location(

@@ -21,14 +21,14 @@ def main():
     collate_fn = get_transform_collate_fn(for_training=True)
     labels_dict = dataset.get_labels_dict()
 
-    NB_IMAGES =  len(dataset)
+    NB_IMAGES = len(dataset)
     random.seed()
     img_idx = random.randrange(0, NB_IMAGES)
     image, target = dataset[img_idx]
 
     for i in range(4):
         new_image, new_target = collate_fn([(image, copy(target))])
-        
+
         ground_truths = format_object_locations(new_target[0], labels_dict, img_idx)
 
         detections = []
