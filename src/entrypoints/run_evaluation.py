@@ -5,15 +5,13 @@ from os import environ, path
 from torch.utils.data import DataLoader
 import torch.distributed as dist
 
-sys.path.append(path.abspath(path.join(__file__, "../../")))
-
-from datasets.vedai import VedaiDataset
-from data_manip.transform import get_transform_collate_fn
-from object_detector import ObjectDetector
-from evaluate.mean_average_precision import get_mean_average_precision
+from ..datasets.vedai import VedaiDataset
+from ..data_manip.transform import get_transform_collate_fn
+from ..object_detector import ObjectDetector
+from ..evaluate.mean_average_precision import get_mean_average_precision
 
 
-def main():
+def evaluate():
     dataset = VedaiDataset(for_training=False)
     loader = DataLoader(dataset, batch_size=1, collate_fn=get_transform_collate_fn(for_training=False))
     num_classes = len(VedaiDataset.get_labels_dict())
@@ -34,8 +32,7 @@ def main():
     mAP = sum(mAPs) / len(mAPs)
     logging.info("Individual mAP for validation set: %.2f%%", mAP*100.)
 
-
-if __name__ == "__main__":
+def main():
     logging.basicConfig(
         stream=sys.stdout,
         level=logging.INFO,
@@ -44,5 +41,7 @@ if __name__ == "__main__":
     environ["MASTER_ADDR"] = "127.0.0.1"
     environ["MASTER_PORT"] = "29503"
     dist.init_process_group(backend="gloo", rank=0, world_size=1)
+    evaluate()
 
+if __name__ == "__main__":
     main()

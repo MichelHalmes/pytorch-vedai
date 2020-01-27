@@ -11,7 +11,7 @@ class GradientSchedule(object):
         self._model = model
         self._schedule = schedule
         self._phase_idx = 0
-        self._lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[3000,4000], gamma=0.3)
+        self._lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[3000, 4000], gamma=0.3)
 
         self._activate_gradients()
 

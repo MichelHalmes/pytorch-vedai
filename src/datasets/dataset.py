@@ -4,8 +4,8 @@ import random
 
 from PIL import Image
 
-import config
-from utils import Box
+from .. import config
+from ..utils import Box
 
 
 class MyDataset(object):

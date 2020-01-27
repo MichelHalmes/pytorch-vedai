@@ -18,13 +18,13 @@ from torch.utils.tensorboard import SummaryWriter
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-from evaluate.mean_average_precision import get_mean_average_precision
-from evaluate.intersection_over_union import non_maximum_suppression
-from evaluate.plot_detections import plot_and_save
-from utils import Box, Location, evaluating, format_object_locations
-from data_manip.transform import get_train_val_iters
-import config
-from gradient_schedule import GradientSchedule
+from .evaluate.mean_average_precision import get_mean_average_precision
+from .evaluate.intersection_over_union import non_maximum_suppression
+from .evaluate.plot_detections import plot_and_save
+from .utils import Box, Location, evaluating, format_object_locations
+from .data_manip.transform import get_train_val_iters
+from . import config
+from .gradient_schedule import GradientSchedule
 
 
 class ObjectDetector(object):
@@ -47,8 +47,8 @@ class ObjectDetector(object):
                         featmap_names=[0, 1, 2, 3],  # + "pool" -> 5 feature maps
                         output_size=7,
                         sampling_ratio=2)
-        model = fasterrcnn_resnet50_fpn(pretrained=True, max_size=config.IMAGE_SIZE,
-                                        box_nms_thresh=.5, box_roi_pool=box_roi_pool)
+        model = fasterrcnn_resnet50_fpn(pretrained=True, min_size=config.IMAGE_SIZE,
+                                            box_nms_thresh=.5, box_roi_pool=box_roi_pool)
 
         torch.manual_seed(0)  # Init the same params in all processes
         model.roi_heads.box_predictor = FastRCNNPredictor(
@@ -62,6 +62,8 @@ class ObjectDetector(object):
         model.to(device)
 
         model = DDP(model, find_unused_parameters=True)
+        if self.is_master():
+            print(model)
 
         return model
 

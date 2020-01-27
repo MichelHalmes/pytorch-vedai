@@ -4,8 +4,8 @@ import math
 import numpy as np
 import cv2
 
-from data_manip.bbox_utils import clip_boxes
-from utils import Box
+from .bbox_utils import clip_boxes
+from ..utils import Box
 
 
 class RandomHSV(object):

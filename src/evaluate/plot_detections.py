@@ -3,7 +3,7 @@ from os import path
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-import config
+from .. import config
 
 
 def _plot_bounding_boxes(locations, ax, is_ground_truth):

@@ -1,11 +1,9 @@
 from os import path
 import csv
 
-
-from datasets.dataset import MyDataset
-
-import config
-from utils import Box
+from .dataset import MyDataset
+from ..import config
+from ..utils import Box
 
 
 class DotaDataset(MyDataset):

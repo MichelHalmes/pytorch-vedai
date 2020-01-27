@@ -7,10 +7,10 @@ from torch.utils.data.distributed import DistributedSampler
 import torch
 from torchvision import transforms as tv_transforms
 
-from data_manip.bbox_utils import clip_boxes
-from data_manip.augmentation import *
-from utils import Box
-import config
+from .bbox_utils import clip_boxes
+from .augmentation import *
+from ..utils import Box
+from .. import config
 
 
 class ToNumpyArray(object):
@@ -133,8 +133,8 @@ def get_train_val_iters(dataset_cls, batch_size):
         dataset = dataset_cls(for_training)
         dist_sampler = DistributedSampler(dataset, shuffle=for_training)
         return DataLoader(dataset,
-                        batch_size=batch_size,  # num_workers=1 if for_training else 0
-                        sampler=dist_sampler,  # shuffle=for_training,
+                        batch_size=batch_size,
+                        sampler=dist_sampler,
                         collate_fn=get_transform_collate_fn(for_training))
     training_loader = get_loader(True)
     validation_loader = get_loader(False)

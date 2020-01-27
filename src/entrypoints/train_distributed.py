@@ -1,8 +1,3 @@
-
-
-# More data
-# https://en.wikipedia.org/wiki/Overhead_Imagery_Research_Data_Set
-
 import logging
 import sys
 from os import environ, path
@@ -15,12 +10,10 @@ import torch
 import torch.distributed as dist
 from torch.multiprocessing import Process
 
-sys.path.append(path.abspath(path.join(__file__, "../../")))
-
-from datasets.vedai import VedaiDataset
-from datasets.dota import DotaDataset
-from object_detector import ObjectDetector
-import config
+from ..datasets.vedai import VedaiDataset
+from ..datasets.dota import DotaDataset
+from ..object_detector import ObjectDetector
+from .. import config
 
 
 @click.command()
@@ -33,8 +26,8 @@ def train_model(restore):
     )
 
     detector = ObjectDetector(num_classes, restore)
-    detector.train(DotaDataset, config.INIT_SCHEDULE)
-    detector.init_optimizer()
+    # detector.train(DotaDataset, config.INIT_SCHEDULE)
+    # detector.init_optimizer()
     detector.train(VedaiDataset, config.TRAINED_SCHEDULE)
 
 
@@ -69,10 +62,13 @@ def run_distributed():
     logging.info("Main process exit")
 
 
-if __name__ == "__main__":
+def main():
     logging.basicConfig(
         stream=sys.stdout,
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(processName)s %(message)s")
 
     run_distributed()
+
+if __name__ == "__main__":
+    main()
