@@ -7,13 +7,11 @@ import random
 
 import matplotlib.pyplot as plt
 
-sys.path.append(path.abspath(path.join(__file__, "../../src")))
-
-from datasets.vedai import VedaiDataset
-from data_manip.transform import get_transform_collate_fn
-from evaluate.plot_detections import plot_detections
-from utils import format_object_locations
-import config
+from src.datasets.vedai import VedaiDataset
+from src.data_manip.transform import get_transform_collate_fn
+from src.evaluate.plot_detections import plot_detections
+from src.utils import format_object_locations
+from src import config
 
 
 def main():

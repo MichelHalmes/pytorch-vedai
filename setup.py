@@ -37,6 +37,8 @@ setup_args = {
             "train_distr=src.entrypoints.train_distributed:main",
             "run_eval=src.entrypoints.run_evaluation:main",
             "convert_images=scripts.convert_images:main",
+            "demo_augmentation=scripts.demo_augmentation:main",
+            "demo_memory_leak=scripts.demo_memory_leak:main",
         ],
     }
 }

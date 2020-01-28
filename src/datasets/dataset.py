@@ -59,11 +59,7 @@ class MyDataset(object):
         assert image.mode == "RGB", f"Bad image {image_id} with mode {image.mode}"
 
         target = self._load_target(image_id, image.size)
-        try:
-            image, target = self._crop_to_size(image, target)
-        except RecursionError:
-            logging.error(image_id)
-            raise
+        image, target = self._crop_to_size(image, target)
 
         return image, target
 

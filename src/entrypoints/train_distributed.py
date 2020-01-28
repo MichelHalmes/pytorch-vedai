@@ -26,8 +26,8 @@ def train_model(restore):
     )
 
     detector = ObjectDetector(num_classes, restore)
-    # detector.train(DotaDataset, config.INIT_SCHEDULE)
-    # detector.init_optimizer()
+    detector.train(DotaDataset, config.INIT_SCHEDULE)
+    detector.init_optimizer()
     detector.train(VedaiDataset, config.TRAINED_SCHEDULE)
 
 
