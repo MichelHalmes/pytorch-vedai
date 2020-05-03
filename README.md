@@ -1,8 +1,5 @@
 # pytorch-vedai
 
-| **Work In Progress** |
-| --- |
-
 
 Using pyTorch for object detection on the VEDAI dataset: [Vehicle Detection in Aerial Imagery](https://downloads.greyc.fr/vedai/).
 
@@ -26,7 +23,7 @@ Once the re-initialized heads are trained, we progressively activate the gradien
 To make the most of the few samples we have, we use extensive data-augmentation. The challenge is to apply the same transformation to the image and the box. For this we make use of open-CV.
 
 The file [augmentation.py](src/data_manip/augmentation.py) defines the following transformations:
- 
+
  * `RandomHSV`: Changes the brightness, contrast, saturation and hue of the image
  * `RandomAxisFlip`: Flips the image over the horizontal, vertical and diagonal axis of the image
  * `RandomRotate:` Rotates the image by an angle without loss of any part at the corners of the image
@@ -46,8 +43,8 @@ The pictures below, show 4 distinct variations of the same image.
 
 
 ### Data extension
-Before training the network on the VEDAI dataset, we also train it on the DOTA: [Dataset for Object Detection in Aerial Images](https://captain-whu.github.io/DOTA/dataset.html). 
-The latter contains about 1700 images. The images have scale-per-pixel comparable to VEDAI but are much larger. We therefore randomly crop sub-parts of the same size as the images in VEDAI (1012x1024) at training time, making the effective size of the dataset much larger. 
+Before training the network on the VEDAI dataset, we also train it on the DOTA: [Dataset for Object Detection in Aerial Images](https://captain-whu.github.io/DOTA/dataset.html).
+The latter contains about 1700 images. The images have scale-per-pixel comparable to VEDAI but are much larger. We therefore randomly crop sub-parts of the same size as the images in VEDAI (1012x1024) at training time, making the effective size of the dataset much larger.
 We only train the image on classes with size comparable to those in VEDAI (eg vehicles, storage tanks, planes) and ignore larger objects (eg Bridges, basketball courts).
 
 The graph shows the convergence of the model on VEDAI, with and without pre-training on DOTA.
@@ -93,7 +90,7 @@ As one can see from the loss, we do not suffer any over-fitting.
 
 
 For evaluation, we use the definition of the mean-average-precision from the VOC Pascal challenge (interpolated version).
-For speed reasons, the mAP is sampled every 25 training steps over one batch of the validation set. This means that we compute mAP on a per image basis and the average over images. 
+For speed reasons, the mAP is sampled every 25 training steps over one batch of the validation set. This means that we compute mAP on a per image basis and the average over images.
 
 The graph below shows the evolution of the mAP calculated as such during training. The final value of the mAP is 57.0%.
 
